@@ -3,7 +3,7 @@
   "srcMiniprogramRoot": "src/",
   "projectname": "xiyuzero-miniprogram",
   "description": "西语Zero — 西班牙语 0→B2 主动词汇学习",
-  "appid": "touristappid",
+  "appid": "wx162070b223ab98ef",
   "compileType": "miniprogram",
   "libVersion": "3.8.10",
   "packOptions": {
@@ -24,5 +24,16 @@
       "outputPath": ""
     }
   },
-  "condition": {}
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "词库页",
+          "pathName": "pages/library/index",
+          "query": ""
+        }
+      ],
+      "current": 0
+    }
+  }
 }
