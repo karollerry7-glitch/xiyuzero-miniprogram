@@ -8,6 +8,7 @@ import type { Rating, UnitFull } from "../../shared/types";
 import { acceptedForms, checkAnswer } from "../../shared/answer";
 import { fetchUnitsByIds, fetchUnitsPage } from "../../services/units";
 import { markLearned, rateUnit, recordRecallResult } from "../../services/progress";
+import { syncNow } from "../../services/sync";
 import { speak } from "../../services/tts";
 import { getPrefs, getReviewsCache } from "../../utils/storage";
 import { Loading, ErrorState, EmptyState } from "../../components/states";

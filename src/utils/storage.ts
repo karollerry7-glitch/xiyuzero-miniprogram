@@ -86,7 +86,7 @@ export function setReviewsCache(reviews: Record<string, ReviewState>): void {
 
 /** 离线评分事件队列（断网时暂存，恢复后同步） */
 export interface PendingEvent {
-  kind: "rate" | "learn" | "recall";
+  kind: "rate" | "learn" | "recall" | "listen";
   unitId: string;
   payload: unknown;
   ts: number;
@@ -218,6 +218,57 @@ export function getPrefs(): Prefs {
 export function setPrefs(patch: Partial<Prefs>): void {
   try {
     Taro.setStorageSync(KEY_PREFS, JSON.stringify({ ...getPrefs(), ...patch }));
+  } catch {
+    /* ignore */
+  }
+}
+
+// ============ 云端同步（Phase 3：LWW 状态同步的本地记账） ============
+
+const KEY_LAST_MUTATION = "xz_last_mutation"; // 本地最后一次学习状态变更（ms 时间戳）
+const KEY_LAST_SYNCED = "xz_last_synced"; // 已成功上传到云端的状态版本（ms 时间戳）
+
+/** 本地最后一次变更时间（0 = 从未变更，如全新设备） */
+export function getLastMutation(): number {
+  try {
+    return Number(Taro.getStorageSync(KEY_LAST_MUTATION)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** 任何学习状态写入时调用（progress.ts 的动作层负责） */
+export function bumpMutation(): void {
+  try {
+    Taro.setStorageSync(KEY_LAST_MUTATION, Date.now());
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getLastSynced(): number {
+  try {
+    return Number(Taro.getStorageSync(KEY_LAST_SYNCED)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function setLastSynced(version: number): void {
+  try {
+    Taro.setStorageSync(KEY_LAST_SYNCED, version);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 整体写入活动记录（云端同步采纳时用；同样限量 90 天） */
+export function setActivityAll(all: Record<string, DayActivity>): void {
+  try {
+    const keys = Object.keys(all).sort().slice(-90);
+    const trimmed: Record<string, DayActivity> = {};
+    for (const key of keys) trimmed[key] = all[key];
+    Taro.setStorageSync(KEY_ACTIVITY, JSON.stringify(trimmed));
   } catch {
     /* ignore */
   }
