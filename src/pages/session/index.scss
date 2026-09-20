@@ -1,0 +1,564 @@
+// 学习会话页样式 — 与 Web 端 FiveDLearn 视觉语言一致（一次只看一个维度）
+@import "../../styles/tokens.scss";
+
+.session {
+  min-height: 100vh;
+  padding: 24rpx 32rpx 48rpx;
+  box-sizing: border-box;
+}
+
+/* 顶栏：进度 + 退出 */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12rpx 4rpx 24rpx;
+
+  &__progress {
+    font-size: 26rpx;
+    color: $ink-50;
+  }
+
+  &__exit {
+    font-size: 26rpx;
+    color: $ink-50;
+    padding: 8rpx 16rpx;
+  }
+}
+
+/* 卡片 */
+.card {
+  background: #ffffff;
+  border-radius: $radius-card;
+  padding: 40rpx 36rpx;
+  box-shadow: 0 4rpx 20rpx rgba(24, 34, 48, 0.05);
+}
+
+/* 卡头：等级 + 主题 + 5D 进度点 */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32rpx;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    min-width: 0;
+  }
+
+  &__level {
+    flex-shrink: 0;
+    padding: 4rpx 16rpx;
+    border-radius: 999rpx;
+    background: rgba(244, 180, 0, 0.15);
+    color: #8a6400;
+    font-size: 22rpx;
+    font-weight: 600;
+  }
+
+  &__topic {
+    font-size: 24rpx;
+    color: $ink-50;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__dots {
+    display: flex;
+    gap: 10rpx;
+    align-items: center;
+    margin-left: 16rpx;
+  }
+}
+
+.dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 999rpx;
+  background: $ink-15;
+  transition: width 0.2s;
+
+  &--active {
+    width: 36rpx;
+    background: $red;
+  }
+
+  &--done {
+    background: rgba(198, 40, 40, 0.4);
+  }
+}
+
+/* 步骤提示 */
+.step-hint {
+  text-align: center;
+  font-size: 24rpx;
+  color: $ink-50;
+  margin-bottom: 32rpx;
+}
+
+/* D2 发音 */
+.sound {
+  &__word {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20rpx;
+  }
+
+  &__text {
+    font-size: 64rpx;
+    font-weight: 700;
+    color: $ink;
+  }
+
+  &__panel {
+    margin: 36rpx auto 0;
+    width: fit-content;
+    padding: 24rpx 40rpx;
+    background: $bg;
+    border-radius: 24rpx;
+    text-align: center;
+  }
+
+  &__syl {
+    display: block;
+    font-size: 34rpx;
+    font-weight: 600;
+    letter-spacing: 6rpx;
+    color: $red;
+  }
+
+  &__stress {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 24rpx;
+    color: $ink-50;
+  }
+
+  &__tip {
+    display: block;
+    margin-top: 28rpx;
+    text-align: center;
+    font-size: 24rpx;
+    color: $ink-40;
+  }
+}
+
+/* 音频按钮 */
+.audio-btn {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 999rpx;
+  background: $red;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34rpx;
+  flex-shrink: 0;
+
+  &--lg {
+    width: 88rpx;
+    height: 88rpx;
+    font-size: 40rpx;
+  }
+
+  &--dark {
+    background: $ink;
+  }
+}
+
+/* D1 含义 */
+.meaning {
+  text-align: center;
+
+  &__word {
+    font-size: 36rpx;
+    color: rgba(24, 34, 48, 0.7);
+  }
+
+  &__main {
+    display: block;
+    margin-top: 28rpx;
+    font-size: 60rpx;
+    font-weight: 700;
+    color: $ink;
+  }
+
+  &__tip {
+    display: block;
+    margin-top: 28rpx;
+    font-size: 24rpx;
+    color: $ink-40;
+  }
+}
+
+/* D3 语法条目 */
+.grammar {
+  &__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 20rpx;
+    padding: 24rpx;
+    background: $bg;
+    border-radius: 20rpx;
+    margin-bottom: 18rpx;
+  }
+
+  &__num {
+    flex-shrink: 0;
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: 999rpx;
+    background: $ink;
+    color: #ffffff;
+    font-size: 22rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+
+  &__text {
+    font-size: 28rpx;
+    color: rgba(24, 34, 48, 0.85);
+    line-height: 1.6;
+  }
+}
+
+/* D4 词块 */
+.chunk {
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx 28rpx;
+    background: rgba(198, 40, 40, 0.03);
+    border: 1rpx solid rgba(198, 40, 40, 0.15);
+    border-radius: 20rpx;
+    margin-bottom: 18rpx;
+  }
+
+  &__es {
+    display: block;
+    font-size: 30rpx;
+    font-weight: 600;
+    color: $red;
+  }
+
+  &__zh {
+    display: block;
+    margin-top: 6rpx;
+    font-size: 24rpx;
+    color: $ink-50;
+  }
+}
+
+/* D5 例句 */
+.sent {
+  &__item {
+    padding: 26rpx 28rpx;
+    background: $bg;
+    border-radius: 20rpx;
+    margin-bottom: 18rpx;
+  }
+
+  &__es {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    font-size: 32rpx;
+    color: $ink;
+    line-height: 1.5;
+  }
+
+  &__zh {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 26rpx;
+    color: $ink-50;
+  }
+}
+
+/* 无 5D 时的兜底卡 */
+.fallback {
+  text-align: center;
+
+  &__es {
+    font-size: 56rpx;
+    font-weight: 700;
+    color: $ink;
+  }
+
+  &__zh {
+    display: block;
+    margin-top: 16rpx;
+    font-size: 36rpx;
+    color: $red;
+  }
+
+  &__meta {
+    display: block;
+    margin-top: 12rpx;
+    font-size: 24rpx;
+    color: $ink-40;
+  }
+
+  &__ex {
+    display: block;
+    margin-top: 32rpx;
+    padding: 24rpx;
+    background: $bg;
+    border-radius: 20rpx;
+    font-size: 28rpx;
+    color: rgba(24, 34, 48, 0.8);
+    line-height: 1.6;
+  }
+}
+
+/* 底部按钮区 */
+.nav {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 40rpx;
+
+  &__back {
+    padding: 0 36rpx;
+    height: 92rpx;
+    line-height: 92rpx;
+    border-radius: $radius-btn;
+    border: 1rpx solid $ink-15;
+    background: #ffffff;
+    color: $ink-50;
+    font-size: 28rpx;
+    display: flex;
+    align-items: center;
+  }
+
+  &__next {
+    flex: 1;
+  }
+}
+
+.btn-main {
+  width: 100%;
+  height: 92rpx;
+  line-height: 92rpx;
+  border-radius: $radius-btn;
+  background: $red;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 600;
+  border: none;
+  text-align: center;
+
+  &--dark {
+    background: $ink;
+  }
+}
+
+/* ============ 回忆阶段 ============ */
+.recall {
+  &__hint {
+    font-size: 24rpx;
+    color: $ink-50;
+  }
+
+  &__zh {
+    display: block;
+    margin-top: 28rpx;
+    font-size: 48rpx;
+    font-weight: 700;
+    color: $ink;
+  }
+
+  &__input {
+    margin-top: 36rpx;
+    width: 100%;
+    height: 96rpx;
+    padding: 0 28rpx;
+    box-sizing: border-box;
+    border: 1rpx solid $ink-15;
+    border-radius: 20rpx;
+    font-size: 32rpx;
+    background: #ffffff;
+  }
+
+  &__feedback {
+    margin-top: 36rpx;
+    padding: 26rpx;
+    border-radius: 20rpx;
+    text-align: center;
+    font-size: 30rpx;
+    font-weight: 600;
+
+    &--correct {
+      background: rgba(46, 164, 79, 0.1);
+      color: #2ea44f;
+    }
+
+    &--close {
+      background: rgba(244, 180, 0, 0.15);
+      color: #8a6400;
+    }
+
+    &--wrong {
+      background: rgba(198, 40, 40, 0.1);
+      color: $red;
+    }
+  }
+
+  &__answer {
+    margin-top: 32rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+
+    &-text {
+      font-size: 48rpx;
+      font-weight: 700;
+      color: $red;
+    }
+  }
+
+  &__example {
+    display: block;
+    margin-top: 20rpx;
+    text-align: center;
+    font-size: 26rpx;
+    color: $ink-50;
+    line-height: 1.6;
+  }
+
+  &__more {
+    margin-top: 28rpx;
+    padding: 22rpx 26rpx;
+    background: $bg;
+    border-radius: 20rpx;
+
+    &-line {
+      display: block;
+      font-size: 24rpx;
+      color: rgba(24, 34, 48, 0.7);
+      line-height: 1.8;
+    }
+  }
+}
+
+/* 四档评分 */
+.ratings {
+  display: flex;
+  gap: 14rpx;
+  margin-top: 36rpx;
+
+  &__btn {
+    flex: 1;
+    padding: 18rpx 0 14rpx;
+    border-radius: 20rpx;
+    border: 1rpx solid $ink-15;
+    background: #ffffff;
+    text-align: center;
+
+    &-label {
+      display: block;
+      font-size: 26rpx;
+      color: $ink;
+    }
+
+    &-hint {
+      display: block;
+      margin-top: 4rpx;
+      font-size: 20rpx;
+      color: $ink-40;
+    }
+
+    &:active {
+      border-color: $red;
+    }
+  }
+}
+
+.ratings-tip {
+  margin-top: 20rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: $ink-40;
+}
+
+/* ============ 完成页 ============ */
+.done {
+  text-align: center;
+  padding-top: 120rpx;
+
+  &__icon {
+    font-size: 100rpx;
+  }
+
+  &__title {
+    display: block;
+    margin-top: 32rpx;
+    font-size: 44rpx;
+    font-weight: 700;
+    color: $ink;
+  }
+
+  &__desc {
+    display: block;
+    margin-top: 20rpx;
+    font-size: 28rpx;
+    color: $ink-50;
+  }
+
+  &__stats {
+    display: flex;
+    justify-content: center;
+    gap: 28rpx;
+    margin-top: 56rpx;
+  }
+
+  &__stat {
+    padding: 28rpx 40rpx;
+    background: #ffffff;
+    border-radius: 24rpx;
+
+    &-num {
+      display: block;
+      font-size: 48rpx;
+      font-weight: 700;
+      color: $red;
+    }
+
+    &-label {
+      display: block;
+      margin-top: 8rpx;
+      font-size: 24rpx;
+      color: $ink-50;
+    }
+  }
+
+  &__actions {
+    margin-top: 72rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    padding: 0 60rpx;
+  }
+}
+
+.btn-outline {
+  width: 100%;
+  height: 92rpx;
+  line-height: 92rpx;
+  border-radius: $radius-btn;
+  border: 1rpx solid rgba(198, 40, 40, 0.3);
+  background: #ffffff;
+  color: $red;
+  font-size: 30rpx;
+  font-weight: 600;
+  text-align: center;
+}

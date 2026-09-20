@@ -12,7 +12,7 @@ const KEY_PENDING_EVENTS = "xz_pending_events";
 // wx.setStorageSync 单 key 上限 1MB，评分事件队列单独管理并限量
 const MAX_PENDING_EVENTS = 200;
 
-import { ReviewState, ServerUser } from "../shared/types";
+import { DayActivity, ReviewState, ServerUser } from "../shared/types";
 
 export function getToken(): string | null {
   try {
@@ -116,6 +116,108 @@ export function pushPendingEvent(ev: PendingEvent): void {
 export function clearPendingEvents(): void {
   try {
     Taro.removeStorageSync(KEY_PENDING_EVENTS);
+  } catch {
+    /* ignore */
+  }
+}
+
+// ============ 每日活动记录（Phase 2：会话写分 / 首页概览读取） ============
+// 与 Web 端 store.ts 的 activity 语义一致（Phase 3 服务端化后由 /api/today 替代）
+
+const KEY_ACTIVITY = "xz_activity";
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function emptyDay(): DayActivity {
+  return {
+    newLearned: 0,
+    reviewed: 0,
+    listening: 0,
+    output: 0,
+    recallCorrect: 0,
+    recallTotal: 0,
+    listeningCorrect: 0,
+    listeningTotal: 0,
+    wrongIds: [],
+  };
+}
+
+export function getActivity(): Record<string, DayActivity> {
+  try {
+    const raw = Taro.getStorageSync(KEY_ACTIVITY);
+    return raw ? (JSON.parse(raw) as Record<string, DayActivity>) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function getTodayActivity(): DayActivity {
+  return getActivity()[todayKey()] ?? emptyDay();
+}
+
+/** 就地更新今日活动（保留旧数据，只追加增量） */
+export function bumpTodayActivity(fn: (d: DayActivity) => DayActivity): void {
+  try {
+    const all = getActivity();
+    const k = todayKey();
+    all[k] = fn(all[k] ?? emptyDay());
+    // 限量：只保留最近 90 天，防存储无限增长
+    const keys = Object.keys(all).sort().slice(-90);
+    const trimmed: Record<string, DayActivity> = {};
+    for (const key of keys) trimmed[key] = all[key];
+    Taro.setStorageSync(KEY_ACTIVITY, JSON.stringify(trimmed));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 连续学习天数（与 Web selectors.streakDays 一致：今天没学不算断签） */
+export function streakDaysLocal(): number {
+  const activity = getActivity();
+  let streak = 0;
+  const d = new Date();
+  for (;;) {
+    const k = d.toISOString().slice(0, 10);
+    const a = activity[k];
+    const did =
+      a && (a.newLearned > 0 || a.reviewed > 0 || a.listening > 0 || a.output > 0);
+    if (did) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else if (k === todayKey()) {
+      d.setDate(d.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+// ============ 学习偏好（Phase 2 骨架版：起始等级 + 每日新词数） ============
+
+const KEY_PREFS = "xz_prefs";
+
+export interface Prefs {
+  startLevel: string; // Starter | A1 | A2 | B1 | B2
+  dailyNew: number;
+}
+
+const DEFAULT_PREFS: Prefs = { startLevel: "Starter", dailyNew: 20 };
+
+export function getPrefs(): Prefs {
+  try {
+    const raw = Taro.getStorageSync(KEY_PREFS);
+    return raw ? { ...DEFAULT_PREFS, ...(JSON.parse(raw) as Prefs) } : DEFAULT_PREFS;
+  } catch {
+    return DEFAULT_PREFS;
+  }
+}
+
+export function setPrefs(patch: Partial<Prefs>): void {
+  try {
+    Taro.setStorageSync(KEY_PREFS, JSON.stringify({ ...getPrefs(), ...patch }));
   } catch {
     /* ignore */
   }

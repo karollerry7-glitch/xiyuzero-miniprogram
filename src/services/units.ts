@@ -3,7 +3,12 @@
 
 import { UnitsPage, UnitFull, UnitSummary } from "../shared/types";
 import { request } from "./request";
-import { getReviewsCache } from "../utils/storage";
+import {
+  getPrefs,
+  getReviewsCache,
+  getTodayActivity,
+  streakDaysLocal,
+} from "../utils/storage";
 
 /** 词库浏览：分页 + 等级筛选 */
 export async function fetchUnitsPage(
@@ -53,17 +58,19 @@ export interface TodayOverview {
 export function localOverview(): TodayOverview {
   const reviews = getReviewsCache();
   const counts = Object.values(reviews).filter((r) => r.status !== "new").length;
+  const today = getTodayActivity();
+  const prefs = getPrefs();
   return {
-    newToday: 0,
-    dailyGoal: 20,
+    newToday: today.newLearned,
+    dailyGoal: prefs.dailyNew,
     dueCount: Object.values(reviews).filter(
       (r) =>
         r.status !== "new" &&
         new Date(r.dueDate).getTime() <= Date.now()
     ).length,
-    streak: 0,
+    streak: streakDaysLocal(),
     currentLevelPct: 0,
-    currentLevelName: "Starter",
+    currentLevelName: prefs.startLevel,
     learnedTotal: counts,
   };
 }

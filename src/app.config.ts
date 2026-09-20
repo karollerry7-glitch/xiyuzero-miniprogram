@@ -1,6 +1,7 @@
 export default defineAppConfig({
   pages: [
     "pages/learn/index",
+    "pages/session/index",
     "pages/review/index",
     "pages/library/index",
     "pages/my/index",

@@ -87,6 +87,24 @@
     margin-top: 20rpx;
     font-size: 24rpx;
     color: rgba(24, 34, 48, 0.4);
+    text-align: center;
+  }
+}
+
+/* 今日回忆小结 */
+.summary {
+  &__title {
+    display: block;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__line {
+    display: block;
+    margin-top: 12rpx;
+    font-size: 26rpx;
+    color: rgba(24, 34, 48, 0.6);
   }
 }
 
