@@ -10,11 +10,18 @@ import { fetchUnitsByIds, fetchUnitsPage } from "../../services/units";
 import { markLearned, rateUnit, recordRecallResult } from "../../services/progress";
 import { syncNow } from "../../services/sync";
 import { speak } from "../../services/tts";
-import { getPrefs, getReviewsCache } from "../../utils/storage";
+import { getPrefs, getReviewsCache, getTodayActivity } from "../../utils/storage";
+import {
+  fetchMembership,
+  getCachedMembership,
+  remainingNewToday,
+  MembershipView,
+} from "../../services/membership";
+import { FREE_DAILY_NEW_WORD_LIMIT } from "../../config/membership";
 import { Loading, ErrorState, EmptyState } from "../../components/states";
 import "./index.scss";
 
-type Phase = "loading" | "error" | "flash" | "recall" | "done" | "alldone";
+type Phase = "loading" | "error" | "flash" | "recall" | "done" | "alldone" | "quota";
 
 const STEPS = [
   { key: "sound", label: "发音" },
@@ -33,17 +40,24 @@ const RATINGS: { key: Rating; label: string; hint: string }[] = [
 
 const LEVELS = ["Starter", "A1", "A2", "B1", "B2"];
 
-/** 组装今日新词队列：API 找新词（本地 reviews 过滤）→ ids 批量取 5D 完整卡 */
-async function buildQueue(): Promise<UnitFull[]> {
+/** 组装今日新词队列：API 找新词（本地 reviews 过滤）→ ids 批量取 5D 完整卡
+ *  maxNew：本次会话最多学几个新词（Entitlement 层计算的剩余额度）
+ *  allowedLevels：null = 不限（Pro）；Free = Starter + A1 */
+async function buildQueue(
+  maxNew: number,
+  allowedLevels: readonly string[] | null
+): Promise<UnitFull[]> {
   const reviews = getReviewsCache();
   const prefs = getPrefs();
-  const need = prefs.dailyNew;
+  const need = Math.max(0, Math.min(prefs.dailyNew, maxNew));
   const collected: string[] = [];
 
   const startIdx = Math.max(0, LEVELS.indexOf(prefs.startLevel));
   outer: for (let li = startIdx; li < LEVELS.length; li++) {
+    const level = LEVELS[li];
+    if (allowedLevels && !allowedLevels.includes(level)) break; // Free 词库边界
     for (let page = 1; ; page++) {
-      const res = await fetchUnitsPage(LEVELS[li], page, 50);
+      const res = await fetchUnitsPage(level, page, 50);
       for (const s of res.items) {
         const r = reviews[s.id];
         if (r && r.status !== "new") continue;
@@ -67,11 +81,32 @@ export default function SessionPage() {
   const [stats, setStats] = useState({ correct: 0, close: 0, wrong: 0 });
   // 防连击：反馈出现后 350ms 内忽略评分点击（对齐 Web GUARD_MS）
   const fbAt = useRef(0);
+  // 会员视图（Entitlement 层）
+  const [member, setMember] = useState<MembershipView>(() => getCachedMembership());
 
   const load = async () => {
     setPhase("loading");
     try {
-      const cards = await buildQueue();
+      // Entitlement：先尝试服务端视图（离线回落缓存）
+      let m = member;
+      try {
+        m = await fetchMembership();
+        setMember(m);
+      } catch {
+        /* 离线：使用缓存视图 */
+      }
+
+      // Free 额度：服务端用量与本地记账取大（防"断网学完→同步失败→再学"绕过）
+      const remaining = remainingNewToday(m, getTodayActivity().newLearned);
+      if (remaining !== null && remaining <= 0) {
+        setPhase("quota");
+        return;
+      }
+      // remaining = null（Pro 不限）；Free 时把本次会话上限压到剩余额度
+      const maxNew = remaining === null ? Number.POSITIVE_INFINITY : remaining;
+      const allowed = m.entitlements.levels; // null = Pro 不限
+
+      const cards = await buildQueue(maxNew, allowed);
       if (cards.length === 0) {
         setPhase("alldone");
         return;
@@ -80,7 +115,7 @@ export default function SessionPage() {
       setIdx(0);
       setStep(0);
       setPhase("flash");
-    } catch (e) {
+    } catch {
       setPhase("error");
     }
   };
@@ -143,6 +178,8 @@ export default function SessionPage() {
       setPhase("flash");
     } else {
       setPhase("done");
+      // 会话完成 → 云端同步（让服务端及时拿到今日用量，跨设备额度一致）
+      syncNow();
     }
   };
 
@@ -185,7 +222,7 @@ export default function SessionPage() {
 
   if (phase === "alldone") {
     return (
-<View className="session" key="alldone">
+      <View className="session" key="alldone">
         <EmptyState
           icon="🎉"
           title="今日新内容已学完"
@@ -198,6 +235,36 @@ export default function SessionPage() {
           <Button className="btn-outline" onClick={goHome}>
             回到首页
           </Button>
+        </View>
+      </View>
+    );
+  }
+
+  // Free 每日额度用完：自然的 Pro 升级提示（不删数据、复习照常）
+  if (phase === "quota") {
+    return (
+      <View className="session" key="quota">
+        <View className="done">
+          <Text className="done__icon">🌅</Text>
+          <Text className="done__title">今日 {FREE_DAILY_NEW_WORD_LIMIT} 个新词已学完</Text>
+          <Text className="done__desc">
+            明天再来学新词。已学内容不会丢失，复习不受限制——现在就去巩固吧。
+          </Text>
+          <View className="quota-upgrade" onClick={() => Taro.navigateTo({ url: "/pages/membership/index" })}>
+            <Text className="quota-upgrade__title">
+              升级 Pro · 每日不限新词
+            </Text>
+            <Text className="quota-upgrade__sub">¥19.9 / 月 · 年卡折合每月约 ¥10.7</Text>
+            <Text className="quota-upgrade__arrow">›</Text>
+          </View>
+          <View className="done__actions">
+            <Button className="btn-main" onClick={goReview}>
+              去复习 →
+            </Button>
+            <Button className="btn-outline" onClick={goHome}>
+              回到首页
+            </Button>
+          </View>
         </View>
       </View>
     );

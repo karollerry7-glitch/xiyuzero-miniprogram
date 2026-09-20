@@ -125,3 +125,12 @@
     color: rgba(24, 34, 48, 0.35);
   }
 }
+
+// Free 学完当日额度的自然升级提示
+.cta-zone__upgrade {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #c62828;
+  font-weight: 600;
+  padding: 8rpx 24rpx;
+}

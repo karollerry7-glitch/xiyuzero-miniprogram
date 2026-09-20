@@ -6,6 +6,7 @@ export default defineAppConfig({
     "pages/review-session/index",
     "pages/library/index",
     "pages/my/index",
+    "pages/membership/index",
   ],
   window: {
     backgroundTextStyle: "light",

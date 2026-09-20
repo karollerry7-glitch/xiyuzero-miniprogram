@@ -84,6 +84,11 @@ export interface DayActivity {
   listeningCorrect: number;
   listeningTotal: number;
   wrongIds: string[];
+  // ---- Phase 4 可选字段（向后兼容：旧数据/旧端无这些字段时回退到总体 recall）----
+  meaningCorrect?: number; // 含义回忆（C→S）正确次数
+  meaningTotal?: number; // 含义回忆总次数
+  chunkCorrect?: number; // 词块回忆正确次数
+  chunkTotal?: number; // 词块回忆总次数
 }
 
 export interface MySentence {

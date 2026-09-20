@@ -6,6 +6,10 @@ import { View, Text, Button } from "@tarojs/components";
 import { useAuth } from "../../services/auth";
 import { localOverview, TodayOverview } from "../../services/units";
 import { getTodayActivity } from "../../utils/storage";
+import {
+  effectiveDailyGoal,
+  getCachedMembership,
+} from "../../services/membership";
 import { EmptyState, ErrorState, Loading } from "../../components/states";
 import "./index.scss";
 
@@ -20,11 +24,19 @@ export default function LearnPage() {
     setToday(getTodayActivity());
   });
 
+  // Entitlement 层：每日目标（Free 被限制在 5，Pro 用用户设置）
+  const member = getCachedMembership();
+  const dailyGoal = effectiveDailyGoal(member, ov.dailyGoal);
+
   const startSession = () => {
     Taro.navigateTo({ url: "/pages/session/index" });
   };
 
-  const finished = ov.newToday >= ov.dailyGoal;
+  const finished = ov.newToday >= dailyGoal;
+
+  const goMembership = () => {
+    Taro.navigateTo({ url: "/pages/membership/index" });
+  };
 
   return (
     <View className="page">
@@ -47,7 +59,7 @@ export default function LearnPage() {
             <View className="card__metric">
               <Text className="card__num">
                 {ov.newToday}
-                <Text className="card__denom"> / {ov.dailyGoal}</Text>
+                <Text className="card__denom"> / {dailyGoal}</Text>
               </Text>
               <Text className="card__label">今日新词</Text>
             </View>
@@ -71,9 +83,17 @@ export default function LearnPage() {
           </Button>
           <Text className="cta-zone__hint">
             {finished
-              ? "随时可以提前学更多，或去复习巩固"
+              ? member.isPro
+                ? "随时可以提前学更多，或去复习巩固"
+                : "随时可以复习巩固 · 明天再学新词"
               : "5D 五步法 · 发音 → 含义 → 语法 → 词块 → 例句"}
           </Text>
+          {/* Free 用户学完当日额度：自然升级提示 */}
+          {finished && !member.isPro && (
+            <Text className="cta-zone__upgrade" onClick={goMembership}>
+              升级 Pro，每日不限新词 ›
+            </Text>
+          )}
         </View>
       )}
 

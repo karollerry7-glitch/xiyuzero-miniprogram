@@ -120,11 +120,11 @@ export default function ReviewSessionPage() {
     );
     setFeedback(result);
     fbAt.current = Date.now();
-    // 记账：听写记 listening，含义/词块记 recall（与 Web 语义一致）
+    // 记账：听写记 listening，含义/词块记 recall（mode 区分，供五维统计）
     if (mode === "sound") {
       recordListeningResult(unit.id, result !== "wrong");
     } else {
-      recordRecallResult(unit.id, result);
+      recordRecallResult(unit.id, result, mode === "chunk" ? "chunk" : "meaning");
     }
     setStats((s) => ({ ...s, [result]: s[result] + 1 }));
     speak(expected);

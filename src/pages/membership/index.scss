@@ -1,0 +1,193 @@
+@import "../../styles/tokens.scss";
+
+.member {
+  min-height: 100vh;
+  padding: 24rpx 32rpx 48rpx;
+  box-sizing: border-box;
+
+  &__topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16rpx 0 24rpx;
+  }
+
+  &__back {
+    width: 64rpx;
+    font-size: 40rpx;
+    color: $ink;
+    padding-left: 8rpx;
+  }
+
+  &__title {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: $ink;
+  }
+
+  &__topbar-ph {
+    width: 64rpx;
+  }
+
+  &__current {
+    background: #ffffff;
+    border-radius: $radius-card;
+    box-shadow: 0 4rpx 20rpx rgba(24, 34, 48, 0.05);
+    padding: 36rpx 32rpx;
+    margin-bottom: 28rpx;
+
+    &-plan {
+      font-size: 40rpx;
+      font-weight: 700;
+      color: $ink;
+    }
+
+    &-desc {
+      display: block;
+      margin-top: 10rpx;
+      font-size: 24rpx;
+      color: $ink-50;
+    }
+  }
+
+  &__plans {
+    display: flex;
+    gap: 20rpx;
+    margin-bottom: 28rpx;
+  }
+
+  &__plan {
+    position: relative;
+    flex: 1;
+    background: #ffffff;
+    border: 2rpx solid rgba(24, 34, 48, 0.08);
+    border-radius: $radius-card;
+    padding: 36rpx 24rpx 28rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    &--rec {
+      border-color: $red;
+      background: #fffaf9;
+    }
+
+    &-badge {
+      position: absolute;
+      top: -14rpx;
+      right: 24rpx;
+      background: $red;
+      color: #ffffff;
+      font-size: 20rpx;
+      font-weight: 600;
+      padding: 6rpx 18rpx;
+      border-radius: 999rpx;
+    }
+
+    &-name {
+      font-size: 26rpx;
+      color: $ink-50;
+      font-weight: 600;
+    }
+
+    &-price {
+      margin-top: 14rpx;
+      font-size: 56rpx;
+      font-weight: 700;
+      color: $ink;
+    }
+
+    &-cur {
+      font-size: 28rpx;
+      font-weight: 600;
+    }
+
+    &-permonth {
+      margin-top: 6rpx;
+      font-size: 24rpx;
+      color: $red;
+      font-weight: 600;
+    }
+
+    &-note {
+      margin-top: 14rpx;
+      font-size: 20rpx;
+      color: $ink-40;
+      text-align: center;
+    }
+  }
+
+  &__compare {
+    background: #ffffff;
+    border-radius: $radius-card;
+    box-shadow: 0 4rpx 20rpx rgba(24, 34, 48, 0.05);
+    padding: 12rpx 24rpx;
+    margin-bottom: 28rpx;
+
+    &-head,
+    &-row {
+      display: flex;
+      align-items: center;
+      padding: 20rpx 0;
+      border-bottom: 1rpx solid rgba(24, 34, 48, 0.06);
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    &-head {
+      font-size: 22rpx;
+      color: $ink-50;
+      font-weight: 600;
+    }
+
+    &-col {
+      flex: 1;
+      text-align: center;
+
+      &--pro {
+        color: $red;
+      }
+    }
+
+    &-label {
+      flex: 1.2;
+      font-size: 24rpx;
+      color: $ink;
+      font-weight: 600;
+    }
+
+    &-val {
+      flex: 1;
+      font-size: 20rpx;
+      color: $ink-50;
+      text-align: center;
+
+      &--pro {
+        color: $ink;
+        font-weight: 600;
+      }
+    }
+  }
+
+  &__buy {
+    margin-top: 8rpx;
+
+    &-btn {
+      background: rgba(24, 34, 48, 0.12) !important;
+      color: $ink-50 !important;
+      font-size: 30rpx;
+      border-radius: $radius-btn;
+      font-weight: 600;
+    }
+
+    &-hint {
+      display: block;
+      margin-top: 16rpx;
+      text-align: center;
+      font-size: 22rpx;
+      color: $ink-40;
+    }
+  }
+}

@@ -562,3 +562,36 @@
   font-weight: 600;
   text-align: center;
 }
+
+// ---- Free 每日额度用完的 Pro 升级提示卡 ----
+.quota-upgrade {
+  position: relative;
+  margin-top: 48rpx;
+  padding: 30rpx 32rpx;
+  background: #fffaf9;
+  border: 1rpx solid rgba(198, 40, 40, 0.25);
+  border-radius: $radius-card;
+  display: flex;
+  flex-direction: column;
+
+  &__title {
+    font-size: 30rpx;
+    font-weight: 700;
+    color: $red;
+  }
+
+  &__sub {
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    color: $ink-50;
+  }
+
+  &__arrow {
+    position: absolute;
+    right: 28rpx;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 40rpx;
+    color: rgba(198, 40, 40, 0.5);
+  }
+}

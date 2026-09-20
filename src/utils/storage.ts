@@ -141,6 +141,10 @@ function emptyDay(): DayActivity {
     listeningCorrect: 0,
     listeningTotal: 0,
     wrongIds: [],
+    meaningCorrect: 0,
+    meaningTotal: 0,
+    chunkCorrect: 0,
+    chunkTotal: 0,
   };
 }
 
@@ -269,6 +273,36 @@ export function setActivityAll(all: Record<string, DayActivity>): void {
     const trimmed: Record<string, DayActivity> = {};
     for (const key of keys) trimmed[key] = all[key];
     Taro.setStorageSync(KEY_ACTIVITY, JSON.stringify(trimmed));
+  } catch {
+    /* ignore */
+  }
+}
+
+// ============ 会员视图缓存（Phase 4：Entitlement 层的本地兜底） ============
+
+const KEY_MEMBERSHIP = "xz_membership";
+
+/** services/membership.ts 的缓存子集（isPro 由读取方实时重算） */
+export interface MembershipCache {
+  plan: "free" | "pro";
+  billingCycle: "monthly" | "yearly" | "lifetime" | null;
+  proUntil: string | null;
+  usage: { date: string; newLearnedToday: number } | null;
+  fetchedAt: number;
+}
+
+export function getMembershipCache(): MembershipCache | null {
+  try {
+    const raw = Taro.getStorageSync(KEY_MEMBERSHIP);
+    return raw ? (JSON.parse(raw) as MembershipCache) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setMembershipCache(c: MembershipCache): void {
+  try {
+    Taro.setStorageSync(KEY_MEMBERSHIP, JSON.stringify(c));
   } catch {
     /* ignore */
   }

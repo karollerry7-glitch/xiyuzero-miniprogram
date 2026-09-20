@@ -35,16 +35,23 @@ export function markLearned(unitId: string): void {
   pushPendingEvent({ kind: "learn", unitId, payload: null, ts: Date.now() });
 }
 
-/** 记录一次 Chinese → Spanish 主动回忆结果 */
+/** 记录一次 Chinese → Spanish 主动回忆结果（mode 区分含义/词块，供五维统计） */
 export function recordRecallResult(
   unitId: string,
-  result: "correct" | "close" | "wrong"
+  result: "correct" | "close" | "wrong",
+  mode: "meaning" | "chunk" = "meaning"
 ): void {
   updateReview(unitId, (prev) => recordProduction(prev, result));
   bumpTodayActivity((d) => ({
     ...d,
     recallTotal: d.recallTotal + 1,
     recallCorrect: d.recallCorrect + (result === "correct" ? 1 : 0),
+    meaningTotal: (d.meaningTotal ?? 0) + (mode === "meaning" ? 1 : 0),
+    meaningCorrect:
+      (d.meaningCorrect ?? 0) + (mode === "meaning" && result === "correct" ? 1 : 0),
+    chunkTotal: (d.chunkTotal ?? 0) + (mode === "chunk" ? 1 : 0),
+    chunkCorrect:
+      (d.chunkCorrect ?? 0) + (mode === "chunk" && result === "correct" ? 1 : 0),
     wrongIds:
       result === "wrong" && !d.wrongIds.includes(unitId)
         ? [...d.wrongIds, unitId]

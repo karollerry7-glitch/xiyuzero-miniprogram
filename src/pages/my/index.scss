@@ -59,6 +59,11 @@
     font-size: 22rpx;
     color: $ink-50;
     font-weight: 600;
+
+    &--pro {
+      background: $red;
+      color: #ffffff;
+    }
   }
 
   &__stats {
@@ -89,6 +94,115 @@
     }
   }
 
+  &__card {
+    background: #ffffff;
+    border-radius: $radius-card;
+    box-shadow: 0 4rpx 20rpx rgba(24, 34, 48, 0.05);
+    padding: 32rpx;
+    margin-bottom: 28rpx;
+  }
+
+  &__card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24rpx;
+  }
+
+  &__card-title {
+    font-size: 30rpx;
+    font-weight: 700;
+    color: $ink;
+  }
+
+  &__card-sub {
+    font-size: 22rpx;
+    color: $ink-40;
+  }
+
+  // ---- 7 天趋势柱状图 ----
+  &__trend {
+    display: flex;
+    align-items: flex-end;
+    height: 200rpx;
+  }
+
+  &__trend-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+  }
+
+  &__trend-barzone {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  &__trend-bar {
+    width: 36rpx;
+    border-radius: 8rpx 8rpx 4rpx 4rpx;
+    background: rgba(198, 40, 40, 0.8);
+  }
+
+  &__trend-num {
+    margin-top: 6rpx;
+    font-size: 20rpx;
+    color: $ink-50;
+  }
+
+  &__trend-date {
+    margin-top: 2rpx;
+    font-size: 20rpx;
+    color: $ink-40;
+  }
+
+  // ---- 五维掌握 ----
+  &__dims {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  &__dim {
+    padding: 14rpx 0;
+
+    &-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10rpx;
+    }
+
+    &-label {
+      font-size: 24rpx;
+      color: $ink;
+      font-weight: 600;
+    }
+
+    &-val {
+      font-size: 24rpx;
+      color: $ink-50;
+    }
+
+    &-track {
+      height: 14rpx;
+      border-radius: 999rpx;
+      background: rgba(24, 34, 48, 0.08);
+      overflow: hidden;
+    }
+
+    &-fill {
+      height: 100%;
+      border-radius: 999rpx;
+      background: linear-gradient(90deg, #e05252, $red);
+    }
+  }
+
   &__menu {
     background: #ffffff;
     border-radius: $radius-card;
@@ -107,9 +221,24 @@
       }
     }
 
+    &-left {
+      display: flex;
+      align-items: center;
+      gap: 12rpx;
+    }
+
     &-label {
       font-size: 28rpx;
       color: $ink;
+    }
+
+    &-badge {
+      padding: 4rpx 14rpx;
+      border-radius: 999rpx;
+      background: $red;
+      color: #ffffff;
+      font-size: 18rpx;
+      font-weight: 700;
     }
 
     &-arrow {
