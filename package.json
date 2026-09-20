@@ -6,7 +6,9 @@
   "scripts": {
     "dev:weapp": "npm run build:weapp -- --watch",
     "build:weapp": "taro build --type weapp",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "e2e": "node tests/e2e.test.mjs"
   },
   "browserslist": [
     "last 3 versions",
@@ -34,9 +36,11 @@
     "@types/react": "^18.3.3",
     "@types/webpack-env": "^1.13.6",
     "babel-preset-taro": "4.2.1",
+    "miniprogram-automator": "^0.12.1",
     "postcss": "^8.4.38",
     "react-refresh": "^0.14.0",
     "sass": "^1.77.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.4.5"
   }
 }
