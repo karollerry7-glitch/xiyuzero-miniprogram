@@ -4,6 +4,11 @@
 //   - 开发期：微信开发者工具勾选「不校验合法域名」即可使用线上/本地 API
 //   - 上线前二选一：① 域名备案后指向 Vercel ② API 部署到微信云托管（默认域名免备案）
 // API 代码为标准 Request/Response，两处部署通用
+//
+// 云托管通道（方案②）：.env 设置 TARO_APP_USE_CLOUDBASE=1 后，
+// /api/* 自动改走 Taro.cloud.callContainer（免域名备案、免合法域名校验）。
+// 需同时设置 TARO_APP_CLOUDBASE_ENV（云托管环境 ID）与
+// TARO_APP_CLOUDBASE_SERVICE（服务名，默认 xiyuzero-api）。默认关闭，不影响现状。
 
 import Taro from "@tarojs/taro";
 import { getToken } from "../utils/storage";
@@ -11,6 +16,11 @@ import { getToken } from "../utils/storage";
 // 编译期内联：TARO_APP_ 前缀环境变量
 const BASE_URL =
   process.env.TARO_APP_API_BASE || "https://learn.xiyuzero.com";
+
+const USE_CLOUDBASE = process.env.TARO_APP_USE_CLOUDBASE === "1";
+const CLOUDBASE_ENV = process.env.TARO_APP_CLOUDBASE_ENV || "";
+const CLOUDBASE_SERVICE = process.env.TARO_APP_CLOUDBASE_SERVICE || "";
+
 
 export class ApiError extends Error {
   status: number;
@@ -40,6 +50,39 @@ function buildQuery(query?: RequestOptions["query"]): string {
   return parts.length ? `?${parts.join("&")}` : "";
 }
 
+/** 统一响应形状（两个通道共用） */
+interface UnifiedResponse {
+  statusCode: number;
+  data: unknown;
+}
+
+/** 云托管通道：callContainer（返回形状与 wx.request 对齐） */
+function callContainerRequest(
+  path: string,
+  method: NonNullable<RequestOptions["method"]>,
+  data: Record<string, unknown> | undefined,
+  header: Record<string, string>
+): Promise<UnifiedResponse> {
+  const cloud = Taro.cloud as unknown as {
+    callContainer: (opts: Record<string, unknown>) => Promise<{
+      statusCode?: number;
+      data?: unknown;
+    }>;
+  };
+  return cloud
+    .callContainer({
+      config: CLOUDBASE_ENV ? { env: CLOUDBASE_ENV } : undefined,
+      path,
+      method,
+      data,
+      header,
+    })
+    .then((res) => ({
+      statusCode: res.statusCode ?? 0,
+      data: res.data,
+    }));
+}
+
 export async function request<T>(
   path: string,
   options: RequestOptions = {}
@@ -51,15 +94,27 @@ export async function request<T>(
   };
   if (token) header.Authorization = `Bearer ${token}`;
 
-  let res: Taro.request.SuccessCallbackResult;
+  const fullPath = `${path}${buildQuery(query)}`;
+  const useCb = USE_CLOUDBASE && CLOUDBASE_SERVICE && path.startsWith("/api");
+
+  let res: UnifiedResponse;
   try {
-    res = await Taro.request({
-      url: `${BASE_URL}${path}${buildQuery(query)}`,
-      method,
-      data,
-      header,
-      timeout: 10000,
-    });
+    if (useCb) {
+      res = await callContainerRequest(
+        fullPath,
+        method,
+        data as Record<string, unknown> | undefined,
+        header
+      );
+    } else {
+      res = await Taro.request({
+        url: `${BASE_URL}${fullPath}`,
+        method,
+        data,
+        header,
+        timeout: 10000,
+      });
+    }
   } catch {
     // 网络层失败（断网/域名不可达）
     throw new ApiError("网络不可用，请检查网络后重试", 0, true);

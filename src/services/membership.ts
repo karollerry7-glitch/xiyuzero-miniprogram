@@ -6,7 +6,7 @@
 //      （本地 activity 会与云端 LWW 同步，登录后自动恢复）
 //   3. 权益参数全部来自 config/membership.ts，不硬编码
 
-import { request } from "./request";
+import { request, ApiError } from "./request";
 import {
   BillingCycle,
   Entitlements,
@@ -147,4 +147,62 @@ export function effectiveDailyGoal(m: MembershipView, prefsDailyNew: number): nu
 export function levelAllowed(m: MembershipView, level: string): boolean {
   if (m.isPro || m.entitlements.levels === null) return true;
   return m.entitlements.levels.includes(level);
+}
+
+// ============ 购买流程（服务端 501 = 支付未开放） ============
+
+export interface PayParams {
+  timeStamp: string;
+  nonceStr: string;
+  package: string;
+  signType: "RSA";
+  paySign: string;
+}
+
+export interface OrderCreateResult {
+  orderId: string;
+  payParams: PayParams;
+}
+
+export interface OrderStatusResult {
+  orderId: string;
+  status: "created" | "paid" | "closed";
+  billingCycle: BillingCycle | null;
+  amountCents: number;
+  paidAt: number | null;
+  createdAt: number;
+}
+
+/** 服务端未配置商户号（第一版）时抛出 */
+export class PaymentUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PaymentUnavailableError";
+  }
+}
+
+/** 创建订单：服务端统一定价，返回 wx.requestPayment 所需参数 */
+export async function createOrder(
+  cycle: BillingCycle
+): Promise<OrderCreateResult> {
+  try {
+    return await request<OrderCreateResult>("/api/orders", {
+      method: "POST",
+      data: { billingCycle: cycle },
+    });
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 501) {
+      throw new PaymentUnavailableError(
+        (e as ApiError).message || "支付功能尚未开放"
+      );
+    }
+    throw e;
+  }
+}
+
+/** 查询订单状态（支付后轮询；服务端会向微信兜底查单） */
+export async function queryOrder(orderId: string): Promise<OrderStatusResult> {
+  return request<OrderStatusResult>(
+    `/api/orders/${encodeURIComponent(orderId)}`
+  );
 }

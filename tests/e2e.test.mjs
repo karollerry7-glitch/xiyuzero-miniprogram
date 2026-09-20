@@ -91,13 +91,41 @@ try {
   assert.ok(recBadge, "年卡应有「推荐」角标");
   const buyBtn = await page.$(".member__buy-btn");
   const buyText = await buyBtn.text();
-  assert.ok(buyText.includes("即将上线"), "购买按钮应为禁用占位");
-  console.log("✓ 会员页：年卡¥128（推荐，≈¥10.7/月）、月卡¥19.9、购买禁用占位");
+  assert.ok(buyText.includes("立即开通"), `购买按钮应为「立即开通」，实际: ${buyText}`);
+  console.log("✓ 会员页：年卡¥128（推荐，≈¥10.7/月）、月卡¥19.9、立即开通按钮");
 
   // 权益对比表
   const rows = await page.$$(".member__compare-row");
   assert.ok(rows.length >= 7, `权益对比应有 7 行，实际 ${rows.length}`);
   console.log(`✓ 会员页：权益对比表（${rows.length} 行）`);
+
+  // ============ 3.5 购买流程：服务端 501 → 「即将上线」弹窗 ============
+  // 在应用上下文里包装 wx.showModal 捕获参数（生产未配置商户号，购买链路保持 501）
+  await mini.evaluate(() => {
+    wx.__modalCalls = [];
+    const orig = wx.showModal;
+    wx.showModal = (opts) => {
+      wx.__modalCalls.push({ title: opts && opts.title });
+      return (orig && orig(opts)) || Promise.resolve({ errMsg: "showModal:ok" });
+    };
+  });
+  const buyCards = await page.$$(".member__plan");
+  const recCard = buyCards[0]; // 年卡（推荐）
+  assert.ok(recCard, "年卡卡片存在");
+  const cardBtn = await recCard.$(".member__buy-btn");
+  await cardBtn.tap();
+  await sleep(4000); // 下单请求（501）+ 弹窗
+  const modalCalls = await mini.evaluate(() => wx.__modalCalls);
+  assert.ok(
+    Array.isArray(modalCalls) && modalCalls.length > 0,
+    "点击开通后应弹出支付未开放提示（服务端 501）"
+  );
+  const modalTitle = modalCalls[0]?.title || "";
+  assert.ok(
+    String(modalTitle).includes("即将上线"),
+    `弹窗标题应为「支付功能即将上线」，实际: ${modalTitle}`
+  );
+  console.log("✓ 购买流程：服务端 501 → 弹窗承接「", modalTitle, "」（第一版预期）");
 
   // ============ 4. 学习会话：5D 卡加载 ============
   await mini.navigateBack();
