@@ -1,0 +1,27 @@
+export default defineAppConfig({
+  pages: [
+    "pages/learn/index",
+    "pages/review/index",
+    "pages/library/index",
+    "pages/my/index",
+  ],
+  window: {
+    backgroundTextStyle: "light",
+    navigationBarBackgroundColor: "#F7F8FA",
+    navigationBarTitleText: "西语Zero",
+    navigationBarTextStyle: "black",
+    backgroundColor: "#F7F8FA",
+  },
+  tabBar: {
+    color: "#66707E",
+    selectedColor: "#C62828",
+    backgroundColor: "#FFFFFF",
+    borderStyle: "white",
+    list: [
+      { pagePath: "pages/learn/index", text: "学习" },
+      { pagePath: "pages/review/index", text: "复习" },
+      { pagePath: "pages/library/index", text: "词库" },
+      { pagePath: "pages/my/index", text: "我的" },
+    ],
+  },
+});

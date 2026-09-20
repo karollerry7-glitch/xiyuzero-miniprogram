@@ -1,0 +1,113 @@
+@import "../../styles/tokens.scss";
+
+.lib {
+  min-height: 100vh;
+  padding: 24rpx 32rpx 48rpx;
+  box-sizing: border-box;
+
+  &__search {
+    background: #ffffff;
+    border-radius: $radius-btn;
+    padding: 8rpx 28rpx;
+    box-shadow: 0 4rpx 20rpx rgba(24, 34, 48, 0.05);
+  }
+
+  &__input {
+    height: 72rpx;
+    font-size: 28rpx;
+    color: $ink;
+  }
+
+  &__levels {
+    white-space: nowrap;
+    margin: 24rpx 0;
+    width: 100%;
+  }
+
+  &__chip {
+    display: inline-block;
+    padding: 12rpx 30rpx;
+    margin-right: 16rpx;
+    border-radius: 999rpx;
+    background: #ffffff;
+    font-size: 26rpx;
+    color: $ink-50;
+
+    &--on {
+      background: $red;
+      color: #ffffff;
+      font-weight: 600;
+    }
+  }
+
+  &__list {
+    background: #ffffff;
+    border-radius: $radius-card;
+    box-shadow: 0 4rpx 20rpx rgba(24, 34, 48, 0.05);
+    overflow: hidden;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28rpx 32rpx;
+    border-bottom: 1rpx solid rgba(24, 34, 48, 0.06);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__item-main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  &__es {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: $ink;
+  }
+
+  &__zh {
+    margin-top: 4rpx;
+    font-size: 24rpx;
+    color: $ink-50;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__badge {
+    flex-shrink: 0;
+    margin-left: 20rpx;
+    padding: 6rpx 18rpx;
+    border-radius: 999rpx;
+    background: rgba(244, 180, 0, 0.14);
+    color: #8a6400;
+    font-size: 22rpx;
+    font-weight: 500;
+  }
+
+  &__empty {
+    padding: 100rpx 0;
+    display: flex;
+    justify-content: center;
+
+    &-text {
+      color: $ink-40;
+      font-size: 26rpx;
+    }
+  }
+
+  &__more {
+    margin-top: 28rpx;
+    display: flex;
+    justify-content: center;
+    padding: 20rpx;
+    color: $red;
+    font-size: 26rpx;
+  }
+}

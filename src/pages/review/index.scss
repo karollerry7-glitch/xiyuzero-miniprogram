@@ -1,0 +1,66 @@
+@import "../../styles/tokens.scss";
+
+.page {
+  min-height: 100vh;
+  padding: 32rpx 32rpx 48rpx;
+  box-sizing: border-box;
+}
+
+.greet {
+  padding: 24rpx 8rpx 32rpx;
+
+  &__hello {
+    display: block;
+    font-size: 44rpx;
+    font-weight: 700;
+    color: $ink;
+  }
+
+  &__sub {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 26rpx;
+    color: $ink-50;
+  }
+}
+
+.card {
+  background: #ffffff;
+  border-radius: $radius-card;
+  padding: 56rpx 36rpx;
+  box-shadow: 0 4rpx 20rpx rgba(24, 34, 48, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.review__count {
+  font-size: 96rpx;
+  font-weight: 700;
+  color: $red;
+  line-height: 1.1;
+}
+
+.review__eta {
+  margin: 12rpx 0 40rpx;
+  font-size: 26rpx;
+  color: $ink-50;
+}
+
+.btn {
+  width: 100%;
+  border-radius: $radius-btn;
+  font-size: 32rpx;
+  font-weight: 600;
+  border: none;
+
+  &--primary {
+    background: $red;
+    color: #ffffff;
+  }
+
+  &[disabled] {
+    background: rgba(24, 34, 48, 0.08);
+    color: rgba(24, 34, 48, 0.35);
+  }
+}

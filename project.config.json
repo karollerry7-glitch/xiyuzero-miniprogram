@@ -1,0 +1,28 @@
+{
+  "miniprogramRoot": "dist/",
+  "srcMiniprogramRoot": "src/",
+  "projectname": "xiyuzero-miniprogram",
+  "description": "西语Zero — 西班牙语 0→B2 主动词汇学习",
+  "appid": "touristappid",
+  "compileType": "miniprogram",
+  "libVersion": "3.8.10",
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": false,
+    "enhance": false,
+    "postcss": false,
+    "minified": false,
+    "coverView": true,
+    "lazyloadPlaceholderEnable": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "condition": {}
+}

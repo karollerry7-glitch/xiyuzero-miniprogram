@@ -1,0 +1,11 @@
+// 设计系统 tokens — 与 Web 端保持一致的视觉语言
+// 用法：@import "../../styles/tokens.scss";（Taro sass 全局注入见 config）
+$bg: #f7f8fa;        // 背景
+$ink: #182230;       // 主文字
+$red: #c62828;       // 西语红（主色）
+$yellow: #f4b400;    // 暖黄（Accent）
+$ink-50: rgba(24, 34, 48, 0.5);
+$ink-40: rgba(24, 34, 48, 0.4);
+$ink-15: rgba(24, 34, 48, 0.15);
+$radius-card: 36rpx; // ≈18px
+$radius-btn: 32rpx;  // ≈16px

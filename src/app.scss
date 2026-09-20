@@ -1,0 +1,10 @@
+// 设计系统 tokens — 与 Web 端 learn.xiyuzero.com 保持一致
+// 背景 #F7F8FA / 主文字 #182230 / 西语红 #C62828 / 暖黄 #F4B400
+// 卡片圆角 16-20px（=32-40rpx），轻阴影，Apple 式克制
+page {
+  background: #f7f8fa;
+  color: #182230;
+  font-size: 28rpx;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Helvetica Neue", "Microsoft YaHei", sans-serif;
+}
