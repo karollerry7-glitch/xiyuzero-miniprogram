@@ -57,17 +57,36 @@ interface UnifiedResponse {
 }
 
 /** 云托管通道：callContainer（返回形状与 wx.request 对齐） */
+let cloudInited = false;
+
+function ensureCloudInit(): void {
+  if (cloudInited) return;
+  const cloud = Taro.cloud;
+  if (CLOUDBASE_ENV) {
+    cloud.init({ env: CLOUDBASE_ENV });
+  } else {
+    cloud.init();
+  }
+  cloudInited = true;
+}
+
 function callContainerRequest(
   path: string,
   method: NonNullable<RequestOptions["method"]>,
   data: Record<string, unknown> | undefined,
   header: Record<string, string>
 ): Promise<UnifiedResponse> {
+  ensureCloudInit();
   const cloud = Taro.cloud as unknown as {
     callContainer: (opts: Record<string, unknown>) => Promise<{
       statusCode?: number;
       data?: unknown;
     }>;
+  };
+  // X-WX-SERVICE：网关据此路由到具体服务，缺失会返回 INVALID_PATH 404
+  const cbHeader: Record<string, string> = {
+    ...header,
+    "X-WX-SERVICE": CLOUDBASE_SERVICE,
   };
   return cloud
     .callContainer({
@@ -75,7 +94,7 @@ function callContainerRequest(
       path,
       method,
       data,
-      header,
+      header: cbHeader,
     })
     .then((res) => ({
       statusCode: res.statusCode ?? 0,
