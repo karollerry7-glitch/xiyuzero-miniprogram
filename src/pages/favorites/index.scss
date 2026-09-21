@@ -1,0 +1,101 @@
+@import "../../styles/tokens.scss";
+
+.fav {
+  min-height: 100vh;
+  padding: 24rpx 32rpx 48rpx;
+  box-sizing: border-box;
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border-radius: $radius-card;
+    box-shadow: 0 4rpx 20rpx rgba(24, 34, 48, 0.05);
+    padding: 28rpx 32rpx;
+  }
+
+  &__main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__es-wrap {
+    display: flex;
+    align-items: center;
+  }
+
+  &__es {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: $ink;
+  }
+
+  &__badge {
+    margin-left: 14rpx;
+    padding: 2rpx 12rpx;
+    border-radius: 999rpx;
+    background: rgba(24, 34, 48, 0.06);
+    font-size: 18rpx;
+    color: $ink-50;
+  }
+
+  &__zh {
+    margin-top: 6rpx;
+    font-size: 24rpx;
+    color: $ink-50;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    margin-left: 20rpx;
+  }
+
+  &__speak {
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 50%;
+    background: rgba(198, 40, 40, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--press {
+      background: rgba(198, 40, 40, 0.2);
+    }
+  }
+
+  &__speak-icon {
+    font-size: 30rpx;
+  }
+
+  &__star {
+    width: 72rpx;
+    height: 72rpx;
+    margin-left: 16rpx;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--press {
+      background: rgba(244, 180, 0, 0.18);
+    }
+  }
+
+  &__star-icon {
+    font-size: 36rpx;
+    color: $yellow;
+  }
+}

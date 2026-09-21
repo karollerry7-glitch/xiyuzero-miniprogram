@@ -227,6 +227,26 @@
       gap: 12rpx;
     }
 
+    &-right {
+      display: flex;
+      align-items: center;
+      gap: 12rpx;
+    }
+
+    &-count {
+      padding: 2rpx 16rpx;
+      border-radius: 999rpx;
+      background: rgba(24, 34, 48, 0.06);
+      font-size: 22rpx;
+      color: $ink-50;
+      font-weight: 600;
+
+      &--warn {
+        background: rgba(198, 40, 40, 0.08);
+        color: $red;
+      }
+    }
+
     &-label {
       font-size: 28rpx;
       color: $ink;

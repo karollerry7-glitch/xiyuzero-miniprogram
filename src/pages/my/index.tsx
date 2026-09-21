@@ -1,25 +1,44 @@
-// 我的页 — 用户信息 + 学习统计（Phase 4）
+// 我的页 — 用户信息 + 学习统计 + 完整菜单（Phase 9 全面完善）
 // 数据全部来自既有 reviews / activity 缓存（云端同步后本地渲染），不重写学习逻辑
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useState } from "react";
 import { View, Text } from "@tarojs/components";
 import { useAuth } from "../../services/auth";
 import { getCachedMembership } from "../../services/membership";
-import { dimensionMastery, mySummary, recentTrend } from "../../shared/stats";
-import { getActivity, getReviewsCache } from "../../utils/storage";
+import { dimensionMastery, mySummary, recentTrend, wrongWords } from "../../shared/stats";
+import { getActivity, getFavorites, getReviewsCache } from "../../utils/storage";
 import type { DayActivity, ReviewState } from "../../shared/types";
 import "./index.scss";
 
-const MENU = [
+interface MenuItem {
+  key: string;
+  label: string;
+  arrow: boolean;
+  badge?: string; // PRO 角标
+  countKey?: "wrong" | "favorites"; // 右侧计数
+}
+
+const MENU: MenuItem[] = [
   { key: "goal", label: "学习目标", arrow: true },
   { key: "membership", label: "会员", arrow: true, badge: "PRO" },
-  { key: "wrong", label: "错词本", arrow: true },
-  { key: "favorites", label: "收藏", arrow: true },
+  { key: "wrong", label: "错词本", arrow: true, countKey: "wrong" },
+  { key: "favorites", label: "我的收藏", arrow: true, countKey: "favorites" },
   { key: "bind", label: "账户绑定", arrow: true },
   { key: "privacy", label: "隐私政策", arrow: true },
   { key: "terms", label: "用户协议", arrow: true },
   { key: "about", label: "关于西语Zero", arrow: true },
 ];
+
+/** PRO 到期时间（YYYY-MM-DD），lifetime / 未知返回 null */
+function proUntilText(proUntil: string | null): string | null {
+  if (!proUntil) return null;
+  const d = new Date(proUntil);
+  if (isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 export default function MyPage() {
   const { user, loading, error, login } = useAuth();
@@ -30,11 +49,13 @@ export default function MyPage() {
   const [activity, setActivity] = useState<Record<string, DayActivity>>(() =>
     getActivity()
   );
+  const [favCount, setFavCount] = useState(() => getFavorites().length);
 
   // tab 页常驻：每次显示时重读缓存（学习/复习返回后自动刷新）
   useDidShow(() => {
     setReviews(getReviewsCache());
     setActivity(getActivity());
+    setFavCount(getFavorites().length);
   });
 
   const m = getCachedMembership();
@@ -42,12 +63,34 @@ export default function MyPage() {
   const trend = recentTrend(activity, 7);
   const dims = dimensionMastery(reviews, activity);
   const maxTrend = Math.max(1, ...trend.map((d) => d.total));
+  const wrongCount = wrongWords(reviews).length;
 
   const onMenu = (key: string) => {
     if (key === "membership") {
       Taro.navigateTo({ url: "/pages/membership/index" });
+    } else if (key === "goal") {
+      Taro.navigateTo({ url: "/pages/goal/index" });
+    } else if (key === "wrong") {
+      Taro.navigateTo({ url: "/pages/wrongbook/index" });
+    } else if (key === "favorites") {
+      Taro.navigateTo({ url: "/pages/favorites/index" });
+    } else if (key === "bind") {
+      Taro.showModal({
+        title: "账户绑定",
+        content: "当前已通过微信账号登录，进度自动云端同步。第一版暂无其他绑定方式，敬请期待。",
+        showCancel: false,
+        confirmText: "知道了",
+      });
+    } else if (key === "privacy" || key === "terms" || key === "about") {
+      Taro.navigateTo({ url: `/pages/legal/index?type=${key}` });
     }
   };
+
+  const planText = m.isPro
+    ? m.billingCycle === "lifetime"
+      ? "PRO 终身"
+      : `PRO · ${proUntilText(m.proUntil) ?? ""} 到期`
+    : "FREE · 每日 5 个新词";
 
   return (
     <View className="my">
@@ -67,9 +110,12 @@ export default function MyPage() {
               {error}（点击重试）
             </Text>
           )}
-          <Text className="my__level">
-            {m.isPro ? "PRO 会员" : "FREE · 每日 5 个新词"} · 已学 {s.learnedTotal} 词
-          </Text>
+          {!user && !loading && !error && (
+            <View className="my__login-btn" onClick={login}>
+              <Text className="my__login-btn-text">登录</Text>
+            </View>
+          )}
+          <Text className="my__level">{planText} · 已学 {s.learnedTotal} 词</Text>
         </View>
         {m.isPro ? (
           <Text className="my__plan my__plan--pro">PRO</Text>
@@ -160,11 +206,21 @@ export default function MyPage() {
           >
             <View className="my__menu-left">
               <Text className="my__menu-label">{item.label}</Text>
-              {"badge" in item && item.badge && (
+              {item.badge && (
                 <Text className="my__menu-badge">{item.badge}</Text>
               )}
             </View>
-            <Text className="my__menu-arrow">{item.arrow ? "›" : ""}</Text>
+            <View className="my__menu-right">
+              {item.countKey === "wrong" && wrongCount > 0 && (
+                <Text className="my__menu-count my__menu-count--warn">
+                  {wrongCount}
+                </Text>
+              )}
+              {item.countKey === "favorites" && favCount > 0 && (
+                <Text className="my__menu-count">{favCount}</Text>
+              )}
+              <Text className="my__menu-arrow">{item.arrow ? "›" : ""}</Text>
+            </View>
           </View>
         ))}
       </View>

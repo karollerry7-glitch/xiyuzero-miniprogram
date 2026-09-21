@@ -91,6 +91,18 @@
     font-weight: 500;
   }
 
+  &__star {
+    flex-shrink: 0;
+    margin-left: 20rpx;
+    font-size: 40rpx;
+    color: $ink-15;
+    line-height: 1;
+
+    &--on {
+      color: $yellow;
+    }
+  }
+
   &__empty {
     padding: 100rpx 0;
     display: flex;

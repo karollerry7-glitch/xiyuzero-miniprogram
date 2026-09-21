@@ -1,5 +1,6 @@
-// 词库页 — 等级筛选 + 分页列表（API 联通验证页：Phase 1 打通 /api/units）
+// 词库页 — 等级筛选 + 分页列表 + 收藏星标（API 联通验证页：Phase 1 打通 /api/units）
 import { useCallback, useEffect, useState } from "react";
+import { useDidShow } from "@tarojs/taro";
 import { View, Text, ScrollView, Input } from "@tarojs/components";
 import {
   fetchUnitsPage,
@@ -7,6 +8,7 @@ import {
 } from "../../services/units";
 import { UnitSummary } from "../../shared/types";
 import { Loading, ErrorState } from "../../components/states";
+import { isFavorite, toggleFavorite } from "../../utils/storage";
 import "./index.scss";
 
 const LEVELS = ["全部", "Starter", "A1", "A2", "B1", "B2"];
@@ -20,6 +22,25 @@ export default function LibraryPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [favs, setFavs] = useState<Record<string, boolean>>({});
+
+  const refreshFavs = useCallback(() => {
+    const map: Record<string, boolean> = {};
+    for (const it of items) map[it.id] = isFavorite(it.id);
+    setFavs(map);
+  }, [items]);
+
+  useEffect(() => {
+    refreshFavs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
+  // 从收藏页返回时同步星标状态（收藏页可取消收藏）
+  useDidShow(() => {
+    const map: Record<string, boolean> = {};
+    for (const it of items) map[it.id] = isFavorite(it.id);
+    setFavs(map);
+  });
 
   const load = useCallback(
     async (p: number, replace: boolean) => {
@@ -97,6 +118,16 @@ export default function LibraryPage() {
               <Text className="lib__zh">{u.chinese}</Text>
             </View>
             <Text className="lib__badge">{u.level}</Text>
+            <Text
+              className={`lib__star ${favs[u.id] ? "lib__star--on" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                const on = toggleFavorite(u.id);
+                setFavs((prev) => ({ ...prev, [u.id]: on }));
+              }}
+            >
+              {favs[u.id] ? "★" : "☆"}
+            </Text>
           </View>
         ))}
       </View>

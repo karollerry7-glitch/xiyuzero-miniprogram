@@ -1,0 +1,53 @@
+@import "../../styles/tokens.scss";
+
+.legal {
+  min-height: 100vh;
+  padding: 32rpx 40rpx 64rpx;
+  box-sizing: border-box;
+
+  &__title {
+    display: block;
+    font-size: 40rpx;
+    font-weight: 700;
+    color: $ink;
+    margin-bottom: 20rpx;
+  }
+
+  &__intro {
+    display: block;
+    font-size: 24rpx;
+    color: $ink-50;
+    line-height: 1.7;
+    padding-bottom: 24rpx;
+    border-bottom: 1rpx solid $ink-15;
+    margin-bottom: 24rpx;
+  }
+
+  &__sec {
+    margin-bottom: 32rpx;
+  }
+
+  &__h {
+    display: block;
+    font-size: 28rpx;
+    font-weight: 700;
+    color: $ink;
+    margin-bottom: 12rpx;
+  }
+
+  &__p {
+    display: block;
+    font-size: 24rpx;
+    color: $ink-50;
+    line-height: 1.8;
+    margin-bottom: 8rpx;
+  }
+
+  &__footer {
+    display: block;
+    margin-top: 24rpx;
+    text-align: center;
+    font-size: 22rpx;
+    color: $ink-40;
+  }
+}

@@ -227,6 +227,44 @@ export function setPrefs(patch: Partial<Prefs>): void {
   }
 }
 
+// ============ 收藏（我的页 Phase 9） ============
+// 第一版本地存储（不上云）：收藏是轻量书签语义，
+// 云端 progress blob 由 Web 端共用，贸然并入 prefs 有跨端覆盖风险；
+// 后续需要多端收藏时再开独立云端 key。
+
+const KEY_FAVORITES = "xz_favorites";
+
+/** 收藏的词条 id 列表（按收藏时间升序） */
+export function getFavorites(): string[] {
+  try {
+    const raw = Taro.getStorageSync(KEY_FAVORITES);
+    const list = raw ? (JSON.parse(raw) as string[]) : [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+export function isFavorite(unitId: string): boolean {
+  return getFavorites().includes(unitId);
+}
+
+/** 切换收藏状态，返回切换后是否已收藏 */
+export function toggleFavorite(unitId: string): boolean {
+  const list = getFavorites();
+  const i = list.indexOf(unitId);
+  if (i >= 0) {
+    list.splice(i, 1);
+    Taro.setStorageSync(KEY_FAVORITES, JSON.stringify(list));
+    return false;
+  }
+  list.push(unitId);
+  // 限量：只保留最近 500 个收藏，防存储无限增长
+  const trimmed = list.slice(-500);
+  Taro.setStorageSync(KEY_FAVORITES, JSON.stringify(trimmed));
+  return true;
+}
+
 // ============ 云端同步（Phase 3：LWW 状态同步的本地记账） ============
 
 const KEY_LAST_MUTATION = "xz_last_mutation"; // 本地最后一次学习状态变更（ms 时间戳）

@@ -7,6 +7,10 @@ export default defineAppConfig({
     "pages/library/index",
     "pages/my/index",
     "pages/membership/index",
+    "pages/goal/index",
+    "pages/wrongbook/index",
+    "pages/favorites/index",
+    "pages/legal/index",
   ],
   window: {
     backgroundTextStyle: "light",

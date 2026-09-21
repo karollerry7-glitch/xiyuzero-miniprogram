@@ -125,6 +125,30 @@ export function mySummary(
   };
 }
 
+/** 错词条目（错词本用） */
+export interface WrongWordEntry {
+  unitId: string;
+  wrongCount: number;
+  lastRatedAt: string; // ISO，可能为空字符串（旧数据）
+}
+
+/**
+ * 错词本列表：wrongCount > 0 的词，按最近评分时间倒序（最近错的排前面）。
+ * 无 lastRatedAt 的旧数据排最后。
+ */
+export function wrongWords(
+  reviews: Record<string, ReviewState>
+): WrongWordEntry[] {
+  return Object.entries(reviews)
+    .filter(([, r]) => r.wrongCount > 0)
+    .map(([unitId, r]) => ({
+      unitId,
+      wrongCount: r.wrongCount,
+      lastRatedAt: r.lastRatedAt ?? "",
+    }))
+    .sort((a, b) => (a.lastRatedAt < b.lastRatedAt ? 1 : -1));
+}
+
 /** 连续学习天数（与 storage.streakDaysLocal / Web selectors.streakDays 一致） */
 export function streakFromActivity(
   activity: Record<string, DayActivity>,
