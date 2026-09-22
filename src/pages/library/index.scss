@@ -49,14 +49,19 @@
 
   &__item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     padding: 28rpx 32rpx;
     border-bottom: 1rpx solid rgba(24, 34, 48, 0.06);
 
     &:last-child {
       border-bottom: none;
     }
+  }
+
+  &__item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
   &__item-main {
@@ -100,6 +105,33 @@
 
     &--on {
       color: $yellow;
+    }
+  }
+
+  &__chevron {
+    flex-shrink: 0;
+    margin-left: 16rpx;
+    font-size: 26rpx;
+    color: $ink-40;
+    transform: rotate(0deg);
+    transition: transform 0.2s ease;
+    display: inline-block;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__detail {
+    &-tip {
+      display: block;
+      padding: 16rpx 0;
+      font-size: 24rpx;
+      color: $ink-40;
+    }
+
+    &-retry {
+      color: $red;
     }
   }
 

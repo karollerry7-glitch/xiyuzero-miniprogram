@@ -1,13 +1,15 @@
-// 词库页 — 等级筛选 + 分页列表 + 收藏星标（API 联通验证页：Phase 1 打通 /api/units）
+// 词库页 — 等级筛选 + 分页列表 + 收藏星标 + 点击展开 5D 详情
 import { useCallback, useEffect, useState } from "react";
 import { useDidShow } from "@tarojs/taro";
 import { View, Text, ScrollView, Input } from "@tarojs/components";
 import {
+  fetchUnitsByIds,
   fetchUnitsPage,
   searchUnits,
 } from "../../services/units";
-import { UnitSummary } from "../../shared/types";
+import { UnitSummary, UnitFull } from "../../shared/types";
 import { Loading, ErrorState } from "../../components/states";
+import { UnitDetail } from "../../components/unit-detail";
 import { isFavorite, toggleFavorite } from "../../utils/storage";
 import "./index.scss";
 
@@ -23,7 +25,10 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favs, setFavs] = useState<Record<string, boolean>>({});
-
+  // 5D 展开：单开模式（点另一行自动收起）；详情按 id 缓存
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [details, setDetails] = useState<Record<string, UnitFull>>({});
+  const [detailLoading, setDetailLoading] = useState<string | null>(null);
   const refreshFavs = useCallback(() => {
     const map: Record<string, boolean> = {};
     for (const it of items) map[it.id] = isFavorite(it.id);
@@ -74,6 +79,30 @@ export default function LibraryPage() {
 
   const hasMore = items.length < total;
 
+  // 确保详情已加载（懒加载 + 缓存；失败可重试）
+  const ensureDetail = async (id: string) => {
+    if (details[id]) return;
+    setDetailLoading(id);
+    try {
+      const [full] = await fetchUnitsByIds([id]);
+      if (full) setDetails((prev) => ({ ...prev, [id]: full }));
+    } catch {
+      /* 失败保持占位，用户可点击重试 */
+    } finally {
+      setDetailLoading(null);
+    }
+  };
+
+  // 点击行：展开/收起 5D 详情
+  const onToggleDetail = (id: string) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(id);
+    ensureDetail(id);
+  };
+
   return (
     <View className="lib">
       {/* 搜索框 */}
@@ -113,21 +142,47 @@ export default function LibraryPage() {
       <View className="lib__list">
         {items.map((u) => (
           <View key={u.id} className="lib__item">
-            <View className="lib__item-main">
-              <Text className="lib__es">{u.spanish}</Text>
-              <Text className="lib__zh">{u.chinese}</Text>
-            </View>
-            <Text className="lib__badge">{u.level}</Text>
-            <Text
-              className={`lib__star ${favs[u.id] ? "lib__star--on" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                const on = toggleFavorite(u.id);
-                setFavs((prev) => ({ ...prev, [u.id]: on }));
-              }}
+            <View
+              className="lib__item-row"
+              onClick={() => onToggleDetail(u.id)}
             >
-              {favs[u.id] ? "★" : "☆"}
-            </Text>
+              <View className="lib__item-main">
+                <Text className="lib__es">{u.spanish}</Text>
+                <Text className="lib__zh">{u.chinese}</Text>
+              </View>
+              <Text className="lib__badge">{u.level}</Text>
+              <Text
+                className={`lib__chevron ${expandedId === u.id ? "lib__chevron--open" : ""}`}
+              >
+                ˇ
+              </Text>
+              <Text
+                className={`lib__star ${favs[u.id] ? "lib__star--on" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const on = toggleFavorite(u.id);
+                  setFavs((prev) => ({ ...prev, [u.id]: on }));
+                }}
+              >
+                {favs[u.id] ? "★" : "☆"}
+              </Text>
+            </View>
+            {expandedId === u.id && (
+              <View className="lib__detail">
+                {detailLoading === u.id && !details[u.id] ? (
+                  <Text className="lib__detail-tip">加载 5D 详情…</Text>
+                ) : details[u.id] ? (
+                  <UnitDetail unit={details[u.id]} />
+                ) : (
+                  <Text
+                    className="lib__detail-tip lib__detail-retry"
+                    onClick={() => ensureDetail(u.id)}
+                  >
+                    详情加载失败，点击重试
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
         ))}
       </View>
