@@ -150,7 +150,6 @@ export function levelAllowed(m: MembershipView, level: string): boolean {
 }
 
 // ============ 购买流程（服务端 501 = 支付未开放） ============
-
 export interface PayParams {
   timeStamp: string;
   nonceStr: string;
@@ -205,4 +204,31 @@ export async function queryOrder(orderId: string): Promise<OrderStatusResult> {
   return request<OrderStatusResult>(
     `/api/orders/${encodeURIComponent(orderId)}`
   );
+}
+
+// ============ 兑换码激活（第一版售卖：客服收款 → 发码 → 激活终身 Pro） ============
+
+export interface RedeemResult {
+  ok: boolean;
+  plan: Plan;
+  billingCycle: BillingCycle | null;
+  proUntil: string | null;
+}
+
+/**
+ * 兑换码激活 Pro（POST /api/redeem）。
+ * 失败（码无效/已用/未登录）时抛 ApiError，message 为可直接展示的中文提示。
+ */
+export async function redeemCode(code: string): Promise<RedeemResult> {
+  const res = await request<RedeemResult>("/api/redeem", {
+    method: "POST",
+    data: { code },
+  });
+  // 激活成功后立即刷新本地缓存（服务端可能尚未拉取最新视图）
+  try {
+    await fetchMembership();
+  } catch {
+    /* 缓存刷新失败不影响激活结果 */
+  }
+  return res;
 }

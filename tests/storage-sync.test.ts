@@ -98,7 +98,7 @@ test("云端恢复：服务端更新 → 本地采纳（含 activity 与 reviews
   };
   const serverActivity: Record<string, DayActivity> = {
     [today]: {
-      newLearned: 5,
+      newLearned: 10,
       reviewed: 2,
       listening: 0,
       output: 0,
@@ -129,11 +129,11 @@ test("云端恢复：服务端更新 → 本地采纳（含 activity 与 reviews
   const r = await syncNow();
   assert.equal(r, "adopted");
   assert.equal(getReviewsCache()["b1-001"].status, "review");
-  assert.equal(getTodayActivity().newLearned, 5);
-  // 重装后额度记账恢复：今日已学 5 → Free 额度已用完
+  assert.equal(getTodayActivity().newLearned, 10);
+  // 重装后额度记账恢复：今日已学 10 → Free 额度已用完
   const { remainingNewToday } = await import("../src/services/membership.js");
   const { getCachedMembership } = await import("../src/services/membership.js");
-  const m = { ...getCachedMembership(), usage: { date: today, newLearnedToday: 5 } };
+  const m = { ...getCachedMembership(), usage: { date: today, newLearnedToday: 10 } };
   assert.equal(remainingNewToday(m, getTodayActivity().newLearned), 0);
 });
 
@@ -144,7 +144,7 @@ test("token 存取：setToken 后可读回（重启恢复登录态的基础）",
 });
 
 // ---- 偏好持久化 ----
-test("偏好：默认 dailyNew=20（首页显示会被 Entitlement 压到 5）", () => {
+test("偏好：默认 dailyNew=20（首页显示会被 Entitlement 压到 10）", () => {
   simulateReinstall();
   assert.equal(getPrefs().dailyNew, 20);
   assert.equal(getPrefs().startLevel, "Starter");

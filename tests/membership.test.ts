@@ -16,8 +16,7 @@ import {
 import {
   FREE_DAILY_NEW_WORD_LIMIT,
   FREE_LEVELS,
-  PRO_MONTHLY_PRICE,
-  PRO_YEARLY_PRICE,
+  PRO_LIFETIME_PRICE,
 } from "../src/config/membership.js";
 
 function freeView(usage?: MembershipView["usage"]): MembershipView {
@@ -48,53 +47,52 @@ const DAY = 24 * 60 * 60 * 1000;
 const today = new Date().toISOString().slice(0, 10);
 
 // ---- 统一配置 ----
-test("统一配置：Free 每日 5 词、价格、等级边界", () => {
-  assert.equal(FREE_DAILY_NEW_WORD_LIMIT, 5);
-  assert.equal(PRO_MONTHLY_PRICE, 19.9);
-  assert.equal(PRO_YEARLY_PRICE, 128);
+test("统一配置：Free 每日 10 词、终身价、等级边界", () => {
+  assert.equal(FREE_DAILY_NEW_WORD_LIMIT, 10);
+  assert.equal(PRO_LIFETIME_PRICE, 99.9);
   assert.deepEqual(FREE_LEVELS, ["Starter", "A1"]);
 });
 
 // ---- 新用户（Free 默认视图）----
-test("新用户默认 Free：额度 5，等级 Starter+A1", () => {
+test("新用户默认 Free：额度 10，等级 Starter+A1", () => {
   const e = entitlementsOf(false);
-  assert.equal(e.dailyNewLimit, 5);
+  assert.equal(e.dailyNewLimit, 10);
   assert.deepEqual(e.levels, ["Starter", "A1"]);
   assert.equal(e.fullVocabulary, false);
 });
 
-test("新用户当天可学满 5 个新词", () => {
+test("新用户当天可学满 10 个新词", () => {
   const m = freeView({ date: today, newLearnedToday: 0 });
-  assert.equal(remainingNewToday(m, 0), 5);
+  assert.equal(remainingNewToday(m, 0), 10);
 });
 
 // ---- Free 学习额度 ----
-test("Free 用户学习 3 个后剩 2", () => {
+test("Free 用户学习 3 个后剩 7", () => {
   const m = freeView({ date: today, newLearnedToday: 3 });
-  assert.equal(remainingNewToday(m, 3), 2);
+  assert.equal(remainingNewToday(m, 3), 7);
 });
 
-test("Free 用户学满 5 个后额度为 0（本地与服务端一致）", () => {
-  const m = freeView({ date: today, newLearnedToday: 5 });
-  assert.equal(remainingNewToday(m, 5), 0);
+test("Free 用户学满 10 个后额度为 0（本地与服务端一致）", () => {
+  const m = freeView({ date: today, newLearnedToday: 10 });
+  assert.equal(remainingNewToday(m, 10), 0);
 });
 
-test("防绕过：断网本地学 5 个但服务端还不知道 → 仍按 5 计（取大者）", () => {
+test("防绕过：断网本地学 10 个但服务端还不知道 → 仍按 10 计（取大者）", () => {
   const m = freeView({ date: today, newLearnedToday: 0 }); // 服务端没同步到
-  assert.equal(newLearnedToday(m, 5), 5); // 取 max(0, 5)
-  assert.equal(remainingNewToday(m, 5), 0);
+  assert.equal(newLearnedToday(m, 10), 10); // 取 max(0, 10)
+  assert.equal(remainingNewToday(m, 10), 0);
 });
 
 test("防重置：服务端记录昨日数据不影响今日（日期规则）", () => {
   const yesterday = new Date(Date.now() - DAY).toISOString().slice(0, 10);
   const m = freeView({ date: yesterday, newLearnedToday: 5 }); // 昨天的用量
-  // usage.date !== today → 服务端今日用量 0；本地今日 0 → 可学 5
-  assert.equal(remainingNewToday(m, 0), 5);
+  // usage.date !== today → 服务端今日用量 0；本地今日 0 → 可学 10
+  assert.equal(remainingNewToday(m, 0), 10);
 });
 
 test("重装后：本地清空，服务端记账仍在 → 额度不重置", () => {
-  // 重装 = 本地 activity 0，但登录后服务端 usage = 5（来自云端进度）
-  const m = freeView({ date: today, newLearnedToday: 5 });
+  // 重装 = 本地 activity 0，但登录后服务端 usage = 10（来自云端进度）
+  const m = freeView({ date: today, newLearnedToday: 10 });
   assert.equal(remainingNewToday(m, 0), 0); // 本地虽为 0，服务端记账优先
 });
 
@@ -120,8 +118,8 @@ test("会员过期降级：proUntil 已过 → isPro=false，回 Free 额度", (
   assert.equal(computeIsPro("pro", "monthly", expired), false);
   const m = proView("monthly", expired);
   assert.equal(m.isPro, false);
-  assert.equal(m.entitlements.dailyNewLimit, 5);
-  assert.equal(remainingNewToday(m, 0), 5);
+  assert.equal(m.entitlements.dailyNewLimit, 10);
+  assert.equal(remainingNewToday(m, 0), 10);
 });
 
 test("临界点：proUntil 恰好为现在 → 已过期", () => {
@@ -147,9 +145,9 @@ test("Free 用户：Starter/A1 允许，A2/B1/B2 拒绝", () => {
 });
 
 // ---- 每日目标 ----
-test("首页每日目标：Free 被压到 5（即使 prefs=20）；Pro 用用户设置", () => {
+test("首页每日目标：Free 被压到 10（即使 prefs=20）；Pro 用用户设置", () => {
   const free = freeView();
-  assert.equal(effectiveDailyGoal(free, 20), 5);
+  assert.equal(effectiveDailyGoal(free, 20), 10);
   assert.equal(effectiveDailyGoal(free, 3), 3); // 用户设更小值尊重用户
   const pro = proView("yearly", new Date(Date.now() + 365 * DAY).toISOString());
   assert.equal(effectiveDailyGoal(pro, 20), 20);

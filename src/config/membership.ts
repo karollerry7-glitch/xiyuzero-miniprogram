@@ -6,7 +6,7 @@
 // ============================================================
 
 /** Free 用户每日最多学习的新单词数 */
-export const FREE_DAILY_NEW_WORD_LIMIT = 5;
+export const FREE_DAILY_NEW_WORD_LIMIT = 10;
 
 /** Free 用户可开启新学习的等级（词库边界；复习/浏览不受限） */
 export const FREE_LEVELS: readonly string[] = ["Starter", "A1"];
@@ -14,14 +14,15 @@ export const FREE_LEVELS: readonly string[] = ["Starter", "A1"];
 /** Free 等级词量（展示用，约数 = Starter 25 + A1 459） */
 export const FREE_LEVEL_WORD_COUNT = 484;
 
-/** Pro 月卡价格（元） */
-export const PRO_MONTHLY_PRICE = 19.9;
+/** Pro 终身价（元）—— 第一版唯一在售方案 */
+export const PRO_LIFETIME_PRICE = 99.9;
 
-/** Pro 年卡价格（元） */
+/** Pro 月/年卡价格（元）—— 历史配置保留，不再展示售卖 */
+export const PRO_MONTHLY_PRICE = 19.9;
 export const PRO_YEARLY_PRICE = 128;
 
-/** 年卡折算月价展示（128 / 12 ≈ 10.67） */
-export const PRO_YEARLY_PER_MONTH_DISPLAY = "10.7";
+/** 购买咨询客服微信（会员页展示，可点击复制） */
+export const CUSTOMER_SERVICE_WECHAT = "HOME6814";
 
 /** 词库总量 */
 export const TOTAL_UNITS = 4505;
@@ -80,20 +81,12 @@ export interface PricingPlan {
 
 export const PRICING_PLANS: PricingPlan[] = [
   {
-    key: "yearly",
-    name: "年卡",
-    price: PRO_YEARLY_PRICE,
-    perMonth: PRO_YEARLY_PER_MONTH_DISPLAY,
-    recommended: true, // 年卡为默认推荐方案
-    note: "折合每月约 ¥10.7",
-  },
-  {
-    key: "monthly",
-    name: "月卡",
-    price: PRO_MONTHLY_PRICE,
+    key: "lifetime",
+    name: "终身会员",
+    price: PRO_LIFETIME_PRICE,
     perMonth: null,
-    recommended: false,
-    note: "按月订阅，随时取消",
+    recommended: true,
+    note: "一次买断 · 永久使用 · 全部功能解锁",
   },
 ];
 
@@ -108,6 +101,11 @@ export const PLAN_FEATURES: { label: string; free: string; pro: string }[] = [
     label: "每日新词",
     free: `最多 ${FREE_DAILY_NEW_WORD_LIMIT} 个`,
     pro: "不限",
+  },
+  {
+    label: "学习目标",
+    free: `最多 ${FREE_DAILY_NEW_WORD_LIMIT} 个 / 天`,
+    pro: "自定义 5 / 10 / 20 / 30 / 50",
   },
   {
     label: "5D 学习流程",

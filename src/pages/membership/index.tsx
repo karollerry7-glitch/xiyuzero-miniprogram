@@ -1,12 +1,11 @@
-// 会员页 — Free / Pro 套餐展示 + 购买流程
-// 购买链路已就绪：createOrder → wx.requestPayment → 轮询订单 → 刷新会员
-// 服务端未配置商户号时返回 501，本页以「即将上线」弹窗承接（第一版体验）
+// 会员页 — Free / Pro 展示 + 开通引导（第一版售卖模式）
+// 售卖链路：添加客服微信 HOME6814 购买（¥99.9 终身）→ 获得兑换码 → 本页输入激活
 // 所有价格 / 额度 / 权益均来自 config/membership.ts（统一配置）
 import { useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
-import { View, Text, Button } from "@tarojs/components";
+import { View, Text, Button, Input } from "@tarojs/components";
 import {
-  BillingCycle,
+  CUSTOMER_SERVICE_WECHAT,
   PLAN_FEATURES,
   PRICING_PLANS,
   TOTAL_UNITS,
@@ -15,19 +14,19 @@ import {
   fetchMembership,
   getCachedMembership,
   MembershipView,
-  createOrder,
-  queryOrder,
-  PaymentUnavailableError,
+  redeemCode,
 } from "../../services/membership";
+import { ApiError } from "../../services/request";
 import { Loading } from "../../components/states";
 import "./index.scss";
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const plan = PRICING_PLANS[0]; // 唯一方案：终身 ¥99.9
 
 export default function MembershipPage() {
   const [m, setM] = useState<MembershipView>(() => getCachedMembership());
   const [loading, setLoading] = useState(true);
-  const [buying, setBuying] = useState<BillingCycle | null>(null);
+  const [code, setCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
 
   useEffect(() => {
     fetchMembership()
@@ -44,67 +43,51 @@ export default function MembershipPage() {
     });
   };
 
-  /** 购买：下单 → 调起支付 → 轮询订单 → 刷新会员状态 */
-  const buy = async (cycle: BillingCycle) => {
-    if (buying) return;
-    setBuying(cycle);
-    try {
-      let order;
-      try {
-        order = await createOrder(cycle);
-      } catch (e) {
-        if (e instanceof PaymentUnavailableError) {
-          Taro.showModal({
-            title: "支付功能即将上线",
-            content: "当前版本暂未开放购买，敬请期待",
-            showCancel: false,
+  /** 开通引导：弹窗展示客服微信，确认即复制 */
+  const onUpgrade = () => {
+    Taro.showModal({
+      title: "开通 Pro 终身会员",
+      content: `添加客服微信购买\n\n微信号：${CUSTOMER_SERVICE_WECHAT}\n\n付款后客服将发放兑换码，\n返回本页输入兑换码即可永久激活。`,
+      confirmText: "复制微信号",
+      cancelText: "暂不开通",
+      success: (res) => {
+        if (res.confirm) {
+          Taro.setClipboardData({
+            data: CUSTOMER_SERVICE_WECHAT,
+            success: () => {
+              Taro.showToast({
+                title: "已复制，去微信添加客服",
+                icon: "none",
+              });
+            },
           });
-          return;
         }
-        throw e;
-      }
+      },
+    });
+  };
 
-      // 调起微信支付（用户取消会 reject，errMsg 含 cancel）
-      await Taro.requestPayment({
-        timeStamp: order.payParams.timeStamp,
-        nonceStr: order.payParams.nonceStr,
-        package: order.payParams.package,
-        signType: order.payParams.signType,
-        paySign: order.payParams.paySign,
-      });
-
-      // 支付完成 → 轮询订单（回调结算有秒级延迟，最多 6 次）
-      let paid = false;
-      for (let i = 0; i < 6; i++) {
-        await sleep(1000);
-        try {
-          const st = await queryOrder(order.orderId);
-          if (st.status === "paid") {
-            paid = true;
-            break;
-          }
-          if (st.status === "closed") break;
-        } catch {
-          /* 网络抖动继续轮询 */
-        }
-      }
-
+  /** 兑换码激活 */
+  const onRedeem = async () => {
+    const trimmed = code.trim();
+    if (!trimmed) {
+      Taro.showToast({ title: "请输入兑换码", icon: "none" });
+      return;
+    }
+    if (redeeming) return;
+    setRedeeming(true);
+    try {
+      await redeemCode(trimmed);
       const view = await fetchMembership();
       setM(view);
-      if (view.isPro) {
-        Taro.showToast({ title: "开通成功 🎉", icon: "success" });
-      } else if (paid) {
-        Taro.showToast({ title: "已支付，权益开通中…", icon: "none" });
-      }
+      Taro.showToast({ title: "激活成功，欢迎加入 PRO 🎉", icon: "success" });
     } catch (e) {
-      const msg = (e as { errMsg?: string })?.errMsg || "";
-      if (msg.includes("cancel")) {
-        Taro.showToast({ title: "已取消支付", icon: "none" });
-      } else {
-        Taro.showToast({ title: "支付未完成，请稍后重试", icon: "none" });
-      }
+      const msg =
+        e instanceof ApiError
+          ? e.message
+          : "激活失败，请稍后重试";
+      Taro.showToast({ title: msg, icon: "none" });
     } finally {
-      setBuying(null);
+      setRedeeming(false);
     }
   };
 
@@ -140,39 +123,52 @@ export default function MembershipPage() {
 
       {!loading && !m.isPro && (
         <View>
-          {/* 价格卡片 */}
+          {/* 终身价卡片（唯一方案） */}
           <View className="member__plans">
-            {PRICING_PLANS.map((p) => (
-              <View
-                key={p.key}
-                className={`member__plan ${p.recommended ? "member__plan--rec" : ""}`}
+            <View className="member__plan member__plan--rec">
+              <Text className="member__plan-badge">限时买断</Text>
+              <Text className="member__plan-name">{plan.name}</Text>
+              <Text className="member__plan-price">
+                <Text className="member__plan-cur">¥</Text>
+                {plan.price}
+              </Text>
+              <Text className="member__plan-permonth">终身使用</Text>
+              <Text className="member__plan-note">{plan.note}</Text>
+              <Button
+                className="member__buy-btn member__buy-btn--card"
+                onClick={onUpgrade}
               >
-                {p.recommended && (
-                  <Text className="member__plan-badge">推荐</Text>
-                )}
-                <Text className="member__plan-name">{p.name}</Text>
-                <Text className="member__plan-price">
-                  <Text className="member__plan-cur">¥</Text>
-                  {p.price}
-                </Text>
-                {p.perMonth && (
-                  <Text className="member__plan-permonth">
-                    约 ¥{p.perMonth} / 月
-                  </Text>
-                )}
-                <Text className="member__plan-note">{p.note}</Text>
-                <Button
-                  className={`member__buy-btn member__buy-btn--card ${
-                    buying === p.key ? "member__buy-btn--busy" : ""
-                  }`}
-                  disabled={buying !== null}
-                  loading={buying === p.key}
-                  onClick={() => buy(p.key)}
-                >
-                  {buying === p.key ? "正在下单…" : "立即开通"}
-                </Button>
-              </View>
-            ))}
+                添加客服微信开通
+              </Button>
+            </View>
+          </View>
+
+          {/* 兑换码激活 */}
+          <View className="member__redeem">
+            <Text className="member__redeem-title">兑换码激活</Text>
+            <Text className="member__redeem-desc">
+              已购买？输入客服发放的兑换码，立即解锁全部功能
+            </Text>
+            <View className="member__redeem-row">
+              <Input
+                className="member__redeem-input"
+                placeholder="XZ-XXXX-XXXX-XXXX"
+                placeholderClass="member__redeem-ph"
+                value={code}
+                maxlength={20}
+                onInput={(e) => setCode(e.detail.value)}
+              />
+              <Button
+                className={`member__redeem-btn ${
+                  redeeming ? "member__redeem-btn--busy" : ""
+                }`}
+                disabled={redeeming}
+                loading={redeeming}
+                onClick={onRedeem}
+              >
+                {redeeming ? "激活中…" : "激活 Pro"}
+              </Button>
+            </View>
           </View>
 
           {/* 权益对比 */}
@@ -198,7 +194,7 @@ export default function MembershipPage() {
           {/* 说明 */}
           <View className="member__buy">
             <Text className="member__buy-hint">
-              购买后立即生效 · 解锁全部 {TOTAL_UNITS} 词 · 续费自动叠加剩余时长
+              一次买断 · 解锁全部 {TOTAL_UNITS} 词 · 支持所有后续更新
             </Text>
           </View>
         </View>
