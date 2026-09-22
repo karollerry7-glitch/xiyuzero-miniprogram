@@ -1,13 +1,14 @@
 // TTS 发音服务 — 复用 Web 端 /api/tts（Edge 神经网络人声，CDN 缓存）
 //
-// 性能设计（预加载）：
-//   首次合成需要 1~3 秒（Vercel → Edge TTS 实时合成），点击后再等必然卡顿。
-//   因此维护一个小型 InnerAudioContext 池：preload() 在 UI 渲染时就设置 src
-//   （小程序会立刻开始缓冲音频），speak() 点击时命中已缓冲的实例立即播放。
-//   池上限 4 个（微信建议 InnerAudioContext 并发 ≤5），满时淘汰最久未用的。
+// 架构（v2，downloadFile 方案）：
+//   早期版本让 InnerAudioContext.src 直接加载网络 URL——在部分 iOS 真机上
+//   网络栈不稳定（request 正常但音频 src 加载失败 errCode=-1/10006，且无明确原因）。
+//   现改为：Taro.downloadFile 把 mp3 下到本地临时文件 → InnerAudioContext 播放本地路径。
+//   优点：① 下载走 wx 网络栈，与 API 请求同源（API 通则下载通），失败有明确
+//   statusCode/errMsg；② 本地文件播放无网络怪癖；③ 下载结果缓存（LRU），
+//   CDN 命中后二次点击零等待。
 //
-// 真机注意：InnerAudioContext.src 受合法域名校验（域名备案前的体验版需开启
-// 「开发调试」）。加载失败时给出一次可见提示（节流），便于用户自诊断。
+// 预加载：preload() 在 UI 渲染时就开始下载，点击时命中缓存立即播放。
 
 import Taro from "@tarojs/taro";
 
@@ -28,113 +29,149 @@ function ttsUrl(text: string, opts: SpeakOptions): string {
   );
 }
 
+// ============ 本地文件缓存（LRU，上限 12 个临时文件） ============
+
+interface CachedAudio {
+  path: string;
+  used: number;
+}
+
+const MAX_CACHE = 12;
+const cache = new Map<string, CachedAudio>(); // url → 本地临时路径
+const inflight = new Map<string, Promise<string>>(); // 并发去重
+
+/** 错误提示节流：10 秒内最多弹一次 */
+let lastErrToastAt = 0;
+function notifyError(detail: string): void {
+  const now = Date.now();
+  if (now - lastErrToastAt < 10_000) return;
+  lastErrToastAt = now;
+  Taro.showToast({
+    title: `语音加载失败（${detail}）`,
+    icon: "none",
+    duration: 2500,
+  });
+}
+
+/** 下载 tts 音频到本地临时文件（带缓存与并发去重） */
+function download(url: string): Promise<string> {
+  const hit = cache.get(url);
+  if (hit) {
+    hit.used = Date.now();
+    return Promise.resolve(hit.path);
+  }
+  const running = inflight.get(url);
+  if (running) return running;
+
+  const p = new Promise<string>((resolve, reject) => {
+    Taro.downloadFile({
+      url,
+      success: (res) => {
+        if (res.statusCode !== 200 || !res.tempFilePath) {
+          reject(new Error(`HTTP ${res.statusCode}`));
+          return;
+        }
+        // LRU 淘汰
+        if (cache.size >= MAX_CACHE) {
+          let oldestKey = "";
+          let oldestUsed = Infinity;
+          cache.forEach((v, k) => {
+            if (v.used < oldestUsed) {
+              oldestUsed = v.used;
+              oldestKey = k;
+            }
+          });
+          if (oldestKey) cache.delete(oldestKey);
+        }
+        cache.set(url, { path: res.tempFilePath, used: Date.now() });
+        resolve(res.tempFilePath);
+      },
+      fail: (e) => {
+        reject(new Error(e.errMsg || "download fail"));
+      },
+    });
+  });
+  inflight.set(url, p);
+  p.finally(() => inflight.delete(url));
+  return p;
+}
+
+// ============ 播放器池（4 个本地播放实例，LRU 复用） ============
+
 interface Slot {
   ctx: Taro.InnerAudioContext;
-  url: string;
-  used: number; // 最近使用时间（LRU 淘汰）
-  played: boolean; // 是否播放过（重播需要先 stop 回到开头）
-  errorNotified: boolean; // 该槽位是否已提示过错误
+  used: number;
 }
 
 const MAX_SLOTS = 4;
 const slots: Slot[] = [];
 
-/** 错误提示节流：10 秒内最多弹一次 */
-let lastErrToastAt = 0;
-function notifyError(errCode: number): void {
-  const now = Date.now();
-  if (now - lastErrToastAt < 10_000) return;
-  lastErrToastAt = now;
-  // 10003/10002 = 域名不在合法列表（未开调试模式/未备案）；-1 = 网络失败
-  const msg =
-    errCode === 10003 || errCode === 10002
-      ? "语音加载被拦截：请在右上角开启「开发调试」后重试"
-      : "语音加载失败，请检查网络后重试";
-  Taro.showToast({ title: msg, icon: "none", duration: 2500 });
+function slotFor(): Slot {
+  if (slots.length < MAX_SLOTS) {
+    const ctx = Taro.createInnerAudioContext();
+    ctx.obeyMuteSwitch = false;
+    slots.push({ ctx, used: 0 });
+    return slots[slots.length - 1];
+  }
+  return slots.reduce((a, b) => (a.used < b.used ? a : b));
 }
 
-/** 拿到 url 对应的槽位（命中复用；未命中则新建/淘汰最旧槽并设 src 开始缓冲） */
-function slotFor(url: string): Slot {
-  let s = slots.find((x) => x.url === url);
-  if (!s) {
-    if (slots.length < MAX_SLOTS) {
-      const ctx = Taro.createInnerAudioContext();
-      ctx.obeyMuteSwitch = false;
-      const slot: Slot = {
-        ctx,
-        url,
-        used: Date.now(),
-        played: false,
-        errorNotified: false,
-      };
-      // 错误监听：创建时挂一次（onXxx 可叠加，不能重复挂），
-      // 闭包引用 slot 对象，淘汰换 src 后标记位自动生效
-      ctx.onError((e) => {
-        console.warn("[tts] audio error", slot.url.slice(-60), e);
-        if (!slot.errorNotified) {
-          slot.errorNotified = true;
-          notifyError(e && (e.errCode ?? -1));
-        }
-      });
-      s = slot;
-      slots.push(slot);
-    } else {
-      s = slots.reduce((a, b) => (a.used < b.used ? a : b));
-      s.ctx.stop();
-      s.ctx.src = url;
-      s.url = url;
-      s.used = Date.now();
-      s.played = false;
-      s.errorNotified = false;
+/** 播放本地文件（同文件重听从头播；iOS 上 stop 异步 → 延迟 50ms 兼容） */
+function playLocal(slot: Slot, path: string): void {
+  slot.used = Date.now();
+  for (const s of slots) {
+    if (s !== slot) {
+      try {
+        s.ctx.stop();
+      } catch {
+        /* ignore */
+      }
     }
   }
-  return s;
+  const needRestart = slot.ctx.src === path && slot.ctx.currentTime > 0;
+  if (slot.ctx.src !== path) {
+    slot.ctx.stop();
+    slot.ctx.src = path;
+  }
+  if (needRestart) {
+    slot.ctx.stop();
+    setTimeout(() => {
+      try {
+        slot.ctx.play();
+      } catch {
+        /* ignore */
+      }
+    }, 50);
+  } else {
+    try {
+      slot.ctx.play();
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
-/** 预加载：在 UI 渲染时调用，提前缓冲音频（点击 🔊 时秒播） */
+// ============ 对外接口（与页面调用方式完全兼容） ============
+
+/** 预加载：在 UI 渲染时调用，提前下载音频（点击 🔊 时秒播） */
 export function preload(text: string, opts: SpeakOptions = {}): void {
   if (!text) return;
-  try {
-    slotFor(ttsUrl(text, opts));
-  } catch {
-    /* 静音失败不影响学习流程 */
-  }
+  download(ttsUrl(text, opts)).catch(() => {
+    /* 预载失败静默：点击时 download 会重试并给出提示 */
+  });
 }
 
 /** 播放西班牙语发音（自动打断上一次；同词重听从头开始） */
 export function speak(text: string, opts: SpeakOptions = {}): void {
   if (!text) return;
-  try {
-    const me = slotFor(ttsUrl(text, opts));
-    me.used = Date.now();
-    // 打断其他正在播放的（同一时间只有一个声音）
-    for (const s of slots) {
-      if (s !== me) {
-        try {
-          s.ctx.stop();
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-    if (me.played) {
-      // 已播过/正在播 → 回到开头。iOS 上 stop() 是异步的，
-      // 立即 play() 可能被吞 → 延迟 50ms 再播（微信社区通用兼容方案）
-      me.ctx.stop();
-      setTimeout(() => {
-        try {
-          me.ctx.play();
-        } catch {
-          /* ignore */
-        }
-      }, 50);
-    } else {
-      me.ctx.play();
-    }
-    me.played = true;
-  } catch {
-    /* 静音失败不影响学习流程 */
-  }
+  download(ttsUrl(text, opts))
+    .then((path) => {
+      playLocal(slotFor(), path);
+    })
+    .catch((e) => {
+      console.warn("[tts] download error", e && e.message);
+      notifyError(e instanceof Error ? e.message.slice(0, 24) : "网络异常");
+    });
 }
 
 export function stopSpeak(): void {
