@@ -6,8 +6,8 @@
 //   （小程序会立刻开始缓冲音频），speak() 点击时命中已缓冲的实例立即播放。
 //   池上限 4 个（微信建议 InnerAudioContext 并发 ≤5），满时淘汰最久未用的。
 //
-// 说明：真机上 InnerAudioContext.src 受合法域名校验（上线前域名备案/云托管同样覆盖此接口）
-// 开发期：开发者工具勾选「不校验合法域名」即可
+// 真机注意：InnerAudioContext.src 受合法域名校验（域名备案前的体验版需开启
+// 「开发调试」）。加载失败时给出一次可见提示（节流），便于用户自诊断。
 
 import Taro from "@tarojs/taro";
 
@@ -33,10 +33,25 @@ interface Slot {
   url: string;
   used: number; // 最近使用时间（LRU 淘汰）
   played: boolean; // 是否播放过（重播需要先 stop 回到开头）
+  errorNotified: boolean; // 该槽位是否已提示过错误
 }
 
 const MAX_SLOTS = 4;
 const slots: Slot[] = [];
+
+/** 错误提示节流：10 秒内最多弹一次 */
+let lastErrToastAt = 0;
+function notifyError(errCode: number): void {
+  const now = Date.now();
+  if (now - lastErrToastAt < 10_000) return;
+  lastErrToastAt = now;
+  // 10003/10002 = 域名不在合法列表（未开调试模式/未备案）；-1 = 网络失败
+  const msg =
+    errCode === 10003 || errCode === 10002
+      ? "语音加载被拦截：请在右上角开启「开发调试」后重试"
+      : "语音加载失败，请检查网络后重试";
+  Taro.showToast({ title: msg, icon: "none", duration: 2500 });
+}
 
 /** 拿到 url 对应的槽位（命中复用；未命中则新建/淘汰最旧槽并设 src 开始缓冲） */
 function slotFor(url: string): Slot {
@@ -45,8 +60,24 @@ function slotFor(url: string): Slot {
     if (slots.length < MAX_SLOTS) {
       const ctx = Taro.createInnerAudioContext();
       ctx.obeyMuteSwitch = false;
-      s = { ctx, url, used: Date.now(), played: false };
-      slots.push(s);
+      const slot: Slot = {
+        ctx,
+        url,
+        used: Date.now(),
+        played: false,
+        errorNotified: false,
+      };
+      // 错误监听：创建时挂一次（onXxx 可叠加，不能重复挂），
+      // 闭包引用 slot 对象，淘汰换 src 后标记位自动生效
+      ctx.onError((e) => {
+        console.warn("[tts] audio error", slot.url.slice(-60), e);
+        if (!slot.errorNotified) {
+          slot.errorNotified = true;
+          notifyError(e && (e.errCode ?? -1));
+        }
+      });
+      s = slot;
+      slots.push(slot);
     } else {
       s = slots.reduce((a, b) => (a.used < b.used ? a : b));
       s.ctx.stop();
@@ -54,6 +85,7 @@ function slotFor(url: string): Slot {
       s.url = url;
       s.used = Date.now();
       s.played = false;
+      s.errorNotified = false;
     }
   }
   return s;
@@ -85,8 +117,20 @@ export function speak(text: string, opts: SpeakOptions = {}): void {
         }
       }
     }
-    if (me.played) me.ctx.stop(); // 已播过/正在播 → 回到开头
-    me.ctx.play();
+    if (me.played) {
+      // 已播过/正在播 → 回到开头。iOS 上 stop() 是异步的，
+      // 立即 play() 可能被吞 → 延迟 50ms 再播（微信社区通用兼容方案）
+      me.ctx.stop();
+      setTimeout(() => {
+        try {
+          me.ctx.play();
+        } catch {
+          /* ignore */
+        }
+      }, 50);
+    } else {
+      me.ctx.play();
+    }
     me.played = true;
   } catch {
     /* 静音失败不影响学习流程 */
