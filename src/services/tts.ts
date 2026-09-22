@@ -46,6 +46,19 @@ function notifyError(detail: string): void {
   const now = Date.now();
   if (now - lastErrToastAt < 10_000) return;
   lastErrToastAt = now;
+
+  // downloadFile 域名白名单拦截（真机体验版最常见）：
+  // errMsg 形如 "downloadFile:fail url not in domain list"
+  const lower = detail.toLowerCase();
+  if (lower.includes("not in domain list") || lower.includes("domain")) {
+    Taro.showToast({
+      title: "开发者需在小程序后台配置 downloadFile 合法域名",
+      icon: "none",
+      duration: 3000,
+    });
+    return;
+  }
+
   Taro.showToast({
     title: `语音加载失败（${detail}）`,
     icon: "none",
