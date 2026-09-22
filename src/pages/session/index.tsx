@@ -9,7 +9,7 @@ import { acceptedForms, checkAnswer } from "../../shared/answer";
 import { fetchUnitsByIds, fetchUnitsPage } from "../../services/units";
 import { markLearned, rateUnit, recordRecallResult } from "../../services/progress";
 import { syncNow } from "../../services/sync";
-import { speak } from "../../services/tts";
+import { speak, preload } from "../../services/tts";
 import { getPrefs, getReviewsCache, getTodayActivity } from "../../utils/storage";
 import {
   fetchMembership,
@@ -134,10 +134,23 @@ export default function SessionPage() {
   useEffect(() => {
     if (phase === "flash" && unit) {
       const t = setTimeout(() => speak(unit.spanish), 300);
+      // 预缓冲下一张卡的发音（切卡时秒播）
+      const next = queue[idx + 1];
+      if (next) preload(next.spanish);
       return () => clearTimeout(t);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx]);
+
+  // 进入词块/例句步骤时预缓冲该步音频
+  useEffect(() => {
+    if (phase === "flash" && unit?.fiveD) {
+      const f = unit.fiveD;
+      if (step === 3 && f.chunks[0]) preload(f.chunks[0].spanish);
+      if (step === 4 && f.sentences[0]) preload(f.sentences[0].spanish);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, idx, phase]);
 
   const last = step === STEPS.length - 1;
 

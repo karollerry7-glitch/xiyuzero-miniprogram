@@ -9,7 +9,7 @@ import { acceptedForms, checkAnswer } from "../../shared/answer";
 import { fetchUnitsByIds } from "../../services/units";
 import { rateUnit, recordListeningResult, recordRecallResult } from "../../services/progress";
 import { syncNow } from "../../services/sync";
-import { speak } from "../../services/tts";
+import { speak, preload } from "../../services/tts";
 import { getReviewsCache } from "../../utils/storage";
 import { isDue } from "../../shared/srs";
 import { Loading, ErrorState, EmptyState } from "../../components/states";
@@ -52,6 +52,20 @@ async function buildQueue(): Promise<UnitFull[]> {
     .slice(0, MAX_PER_SESSION);
   if (dueIds.length === 0) return [];
   return fetchUnitsByIds(dueIds);
+}
+
+/** 第 i 题的标准答案（与下方 mode/chunkItem 推导逻辑一致；预加载用） */
+function expectedOf(queue: UnitFull[], i: number): string {
+  const u = queue[i];
+  if (!u) return "";
+  const fd = u.fiveD;
+  const mode: Mode = fd
+    ? (["meaning", "sound", "chunk"] as Mode[])[(hash(u.id) + i) % 3]
+    : "meaning";
+  if (mode === "chunk" && fd && fd.chunks.length > 0) {
+    return fd.chunks[hash(u.id) % fd.chunks.length].spanish;
+  }
+  return u.spanish;
 }
 
 export default function ReviewSessionPage() {
@@ -102,8 +116,13 @@ export default function ReviewSessionPage() {
       : null;
   const expected = chunkItem ? chunkItem.spanish : unit?.spanish ?? "";
 
-  // sound 模式进入即自动播放
+  // sound 模式进入即自动播放；所有模式预缓冲当前题 + 下一题的音频（提交反馈秒播）
   useEffect(() => {
+    if (phase === "quiz" && unit) {
+      preload(expected);
+      const nextExp = expectedOf(queue, idx + 1);
+      if (nextExp) preload(nextExp);
+    }
     if (phase === "quiz" && mode === "sound" && unit) {
       const t = setTimeout(() => speak(expected), 300);
       return () => clearTimeout(t);

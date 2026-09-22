@@ -1,11 +1,25 @@
 // 5D 单词详情 — 词库/收藏等列表的展开内容（与学习会话同源数据 UnitFull.fiveD）
+import { useEffect } from "react";
 import { View, Text } from "@tarojs/components";
 import type { UnitFull } from "../shared/types";
-import { speak } from "../services/tts";
+import { speak, preload } from "../services/tts";
 import "./unit-detail.scss";
 
 export function UnitDetail({ unit }: { unit: UnitFull }) {
   const fiveD = unit.fiveD;
+
+  // 渲染即预缓冲：主词 + 首个词块/例句（点击 🔊 时已就绪，秒播）
+  useEffect(() => {
+    preload(unit.spanish);
+    if (fiveD) {
+      if (fiveD.chunks[0]) preload(fiveD.chunks[0].spanish);
+      if (fiveD.sentences[0]) preload(fiveD.sentences[0].spanish);
+    } else {
+      preload(unit.example.spanish);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unit.id]);
+
 
   if (!fiveD) {
     // 无 5D 数据的兜底（与 session 页 fallback 一致）

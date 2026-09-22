@@ -5,7 +5,7 @@ import { useState } from "react";
 import { View, Text } from "@tarojs/components";
 import { getFavorites, toggleFavorite } from "../../utils/storage";
 import { fetchUnitsByIds } from "../../services/units";
-import { speak } from "../../services/tts";
+import { speak, preload } from "../../services/tts";
 import { Loading, EmptyState, ErrorState } from "../../components/states";
 import "./index.scss";
 
@@ -33,6 +33,8 @@ export default function FavoritesPage() {
         }
       }
       setRows(out);
+      // 预缓冲最前面几行的发音（点击 🔊 秒播；池容量 4）
+      out.slice(0, 4).forEach((r) => preload(r.spanish));
     } catch (e) {
       setError(e instanceof Error ? e.message : "加载失败");
     } finally {
