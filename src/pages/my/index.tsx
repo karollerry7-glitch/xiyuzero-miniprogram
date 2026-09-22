@@ -90,7 +90,7 @@ export default function MyPage() {
     ? m.billingCycle === "lifetime"
       ? "PRO 终身"
       : `PRO · ${proUntilText(m.proUntil) ?? ""} 到期`
-    : "FREE · 每日 5 个新词";
+    : "FREE · 每日 10 个新词";
 
   return (
     <View className="my">
@@ -111,8 +111,13 @@ export default function MyPage() {
             </Text>
           )}
           {!user && !loading && !error && (
-            <View className="my__login-btn" onClick={login}>
-              <Text className="my__login-btn-text">登录</Text>
+            <View
+              className="my__login-btn"
+              onClick={() => {
+                Taro.navigateTo({ url: "/pages/login/index" });
+              }}
+            >
+              <Text className="my__login-btn-text">微信一键登录</Text>
             </View>
           )}
           <Text className="my__level">{planText} · 已学 {s.learnedTotal} 词</Text>

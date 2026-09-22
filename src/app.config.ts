@@ -7,6 +7,7 @@ export default defineAppConfig({
     "pages/library/index",
     "pages/my/index",
     "pages/membership/index",
+    "pages/login/index",
     "pages/goal/index",
     "pages/wrongbook/index",
     "pages/favorites/index",

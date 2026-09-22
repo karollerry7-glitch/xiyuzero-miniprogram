@@ -14,7 +14,7 @@ import { EmptyState, ErrorState, Loading } from "../../components/states";
 import "./index.scss";
 
 export default function LearnPage() {
-  const { user, loading, error, login } = useAuth();
+  const { user, loading, error, login, refresh } = useAuth();
   const [ov, setOv] = useState<TodayOverview>(() => localOverview());
   const [today, setToday] = useState(() => getTodayActivity());
 
@@ -22,6 +22,26 @@ export default function LearnPage() {
   useDidShow(() => {
     setOv(localOverview());
     setToday(getTodayActivity());
+    refresh(); // 从登录页返回等场景同步用户昵称
+
+    // 首次启动未登录 → 引导去登录页（延时等待 App 静默登录结果；
+    // 已跳过或已登录则不再打扰；离开本页后不重复弹）
+    setTimeout(() => {
+      try {
+        const user = Taro.getStorageSync("xz_user");
+        const token = Taro.getStorageSync("xz_token");
+        const skipped = Taro.getStorageSync("xz_login_skipped");
+        const pages = Taro.getCurrentPages();
+        const onLearn =
+          pages.length > 0 &&
+          pages[pages.length - 1].route === "pages/learn/index";
+        if (!user && !token && !skipped && onLearn) {
+          Taro.navigateTo({ url: "/pages/login/index" });
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 1500);
   });
 
   // Entitlement 层：每日目标（Free 被限制在 5，Pro 用用户设置）

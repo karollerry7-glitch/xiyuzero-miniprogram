@@ -74,10 +74,15 @@ export function useAuth() {
     }
   }, []);
 
+  /** 轻量刷新：从登录页返回等场景同步本地缓存（不闪 loading、不发请求） */
+  const refresh = useCallback(() => {
+    setUserState(getUser());
+  }, []);
+
   useEffect(() => {
     if (!user) login();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { user, loading, error, login };
+  return { user, loading, error, login, refresh };
 }
