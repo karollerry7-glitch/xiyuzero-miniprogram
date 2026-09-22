@@ -11,6 +11,7 @@ export default defineAppConfig({
     "pages/wrongbook/index",
     "pages/favorites/index",
     "pages/legal/index",
+    "pages/orbit/index",
   ],
   window: {
     backgroundTextStyle: "light",

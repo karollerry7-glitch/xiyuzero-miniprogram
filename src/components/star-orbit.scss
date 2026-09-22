@@ -1,0 +1,241 @@
+// 5D 词汇星轨 — 深夜海军蓝底 / 陶土橙点缀 / 暖金星体 / 象牙白文字
+// 全 CSS 动效（无图片资源，首屏轻量）；遵循系统「减少动态效果」设置
+$night: #0b1736;
+$terra: #e86f51;
+$gold: #f2c46d;
+$ivory: #fff9ef;
+
+.so {
+  position: relative;
+  width: 608rpx;
+  height: 608rpx;
+  margin: 0 auto;
+  padding: 24rpx;
+  box-sizing: border-box;
+
+  /* 中央暖光晕 */
+  &::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 130%;
+    height: 130%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(
+      circle at 50% 50%,
+      rgba(242, 196, 109, 0.1) 0%,
+      rgba(232, 111, 81, 0.05) 38%,
+      transparent 68%
+    );
+    pointer-events: none;
+  }
+
+  /* 轨道区（560rpx，四周各留 24rpx 呼吸空间） */
+  &__field {
+    position: absolute;
+    left: 24rpx;
+    top: 24rpx;
+    width: 560rpx;
+    height: 560rpx;
+  }
+
+  &__dust {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 560rpx;
+    height: 560rpx;
+    pointer-events: none;
+  }
+
+  &__dust-dot {
+    position: absolute;
+    border-radius: 50%;
+    background: $ivory;
+  }
+
+  /* ---- 轨道环 ---- */
+  &__rings {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 560rpx;
+    height: 560rpx;
+    animation: soRotate 1.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  &__ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1rpx solid rgba(255, 249, 239, 0.09);
+  }
+
+  &__ring-label {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 15rpx;
+    letter-spacing: 4rpx;
+    color: rgba(255, 249, 239, 0.3);
+  }
+
+  /* ---- 词星（锚点定位，缩放不偏移） ---- */
+  &__star {
+    position: absolute;
+    width: 0;
+    height: 0;
+    transition: transform 0.25s ease;
+    z-index: 2;
+
+    &--on {
+      transform: scale(1.22);
+      z-index: 3;
+    }
+  }
+
+  &__star-in {
+    position: absolute;
+    left: 0;
+    top: 0;
+    animation: soStarIn 0.55s ease-out both;
+  }
+
+  &__star-dot {
+    position: absolute;
+    left: -7rpx;
+    top: -7rpx;
+    width: 14rpx;
+    height: 14rpx;
+    border-radius: 50%;
+    background: $gold;
+    box-shadow: 0 0 14rpx rgba(242, 196, 109, 0.75),
+      0 0 40rpx rgba(242, 196, 109, 0.22);
+  }
+
+  &__star-label {
+    position: absolute;
+    top: 14rpx;
+    left: 0;
+    transform: translateX(-50%);
+    width: 176rpx;
+    text-align: center;
+    font-size: 20rpx;
+    color: rgba(255, 249, 239, 0.88);
+    line-height: 1.25;
+  }
+
+  &__star--on &__star-dot {
+    background: $terra;
+    box-shadow: 0 0 18rpx rgba(232, 111, 81, 0.9),
+      0 0 50rpx rgba(232, 111, 81, 0.32);
+  }
+
+  &__star--on &__star-label {
+    color: $gold;
+    font-weight: 600;
+  }
+
+  /* ---- 中央核心 ---- */
+  &__core {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: soCoreIn 0.9s 0.3s ease-out both;
+    z-index: 4;
+  }
+
+  &__core-num {
+    font-family: Georgia, "Times New Roman", "PingFang SC", serif;
+    font-size: 108rpx;
+    line-height: 1;
+    color: $gold;
+  }
+
+  &__core-word {
+    margin-top: 4rpx;
+    font-size: 22rpx;
+    letter-spacing: 10rpx;
+    text-indent: 10rpx;
+    color: $ivory;
+  }
+
+  &__core-divider {
+    margin: 16rpx 0 12rpx;
+    width: 64rpx;
+    height: 2rpx;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(242, 196, 109, 0.7),
+      transparent
+    );
+  }
+
+  &__core-sub {
+    font-size: 20rpx;
+    color: rgba(255, 249, 239, 0.55);
+    letter-spacing: 4rpx;
+    text-indent: 4rpx;
+  }
+
+  /* 兜底/减动效：跳过入场 */
+  &--instant &__rings,
+  &--instant &__star-in,
+  &--instant &__core {
+    animation: none;
+  }
+}
+
+@keyframes soRotate {
+  from {
+    transform: rotate(-10deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes soStarIn {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes soCoreIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* 遵循系统「减少动态效果」 */
+@media (prefers-reduced-motion: reduce) {
+  .so__rings,
+  .so__star-in,
+  .so__core {
+    animation: none;
+  }
+  .so__star {
+    transition: none;
+  }
+}

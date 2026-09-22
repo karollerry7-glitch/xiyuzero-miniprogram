@@ -10,10 +10,11 @@ import { fetchUnitsByIds, fetchUnitsPage } from "../../services/units";
 import { markLearned, rateUnit, recordRecallResult } from "../../services/progress";
 import { syncNow } from "../../services/sync";
 import { speak, preload } from "../../services/tts";
-import { getPrefs, getReviewsCache, getTodayActivity } from "../../utils/storage";
+import { getPrefs, getReviewsCache, getTodayActivity, setLastOrbitWords } from "../../utils/storage";
 import {
   fetchMembership,
   getCachedMembership,
+  effectiveDailyGoal,
   remainingNewToday,
   MembershipView,
 } from "../../services/membership";
@@ -190,9 +191,25 @@ export default function SessionPage() {
       setFeedback(null);
       setPhase("flash");
     } else {
-      setPhase("done");
       // 会话完成 → 云端同步（让服务端及时拿到今日用量，跨设备额度一致）
       syncNow();
+      // 达成今日新词目标 → 星轨打卡页（Phase 13 仪式页；数据为当日真实学习记录）
+      const goal = effectiveDailyGoal(member, getPrefs().dailyNew);
+      if (queue.length > 0 && getTodayActivity().newLearned >= goal) {
+        setLastOrbitWords(
+          queue.map((u) => ({
+            id: u.id,
+            spanish: u.spanish,
+            chinese: u.chinese,
+          }))
+        );
+        Taro.redirectTo({
+          url: "/pages/orbit/index",
+          fail: () => setPhase("done"),
+        });
+        return;
+      }
+      setPhase("done");
     }
   };
 

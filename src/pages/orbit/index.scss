@@ -1,0 +1,218 @@
+// 星轨打卡页 — 地中海夜空 / 深夜海军蓝 #0B1736 / 陶土橙 #E86F51
+// 暖金 #F2C46D / 象牙白 #FFF9EF；无白卡堆叠，靠留白与细分隔线营造呼吸感
+$night: #0b1736;
+$terra: #e86f51;
+$gold: #f2c46d;
+$ivory: #fff9ef;
+
+page {
+  background: $night;
+}
+
+.orbit {
+  position: relative;
+  min-height: 100vh;
+  background: $night;
+  color: $ivory;
+  padding: 0 48rpx calc(56rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  /* 环境光：顶部微金 + 底部渐暗（呼吸感） */
+  &__bg {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        120% 50% at 50% -10%,
+        rgba(242, 196, 109, 0.07),
+        transparent 55%
+      ),
+      radial-gradient(140% 90% at 50% 125%, rgba(3, 8, 20, 0.85), transparent 62%);
+  }
+
+  /* ---- 顶部 ---- */
+  &__nav {
+    position: relative;
+    padding-bottom: 16rpx;
+  }
+
+  &__nav-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 12rpx;
+  }
+
+  &__date {
+    font-size: 22rpx;
+    letter-spacing: 4rpx;
+    color: rgba(255, 249, 239, 0.4);
+  }
+
+  &__title {
+    margin-top: 8rpx;
+    font-size: 30rpx;
+    letter-spacing: 8rpx;
+    text-indent: 8rpx;
+    color: rgba(255, 249, 239, 0.85);
+  }
+
+  &__close {
+    position: fixed;
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 50%;
+    border: 1rpx solid rgba(255, 249, 239, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28rpx;
+    color: rgba(255, 249, 239, 0.7);
+    z-index: 10;
+  }
+
+  /* ---- 星轨 ---- */
+  &__visual {
+    margin-top: 8rpx;
+  }
+
+  /* ---- 文案 ---- */
+  &__phrase {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20rpx;
+  }
+
+  &__phrase-es {
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-size: 30rpx;
+    color: rgba(242, 196, 109, 0.95);
+  }
+
+  &__phrase-zh {
+    margin-top: 10rpx;
+    font-size: 24rpx;
+    color: rgba(255, 249, 239, 0.6);
+    letter-spacing: 2rpx;
+  }
+
+  /* ---- 统计 ---- */
+  &__stats {
+    margin: 48rpx auto 0;
+    display: flex;
+    align-items: center;
+    gap: 64rpx;
+  }
+
+  &__stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  &__stat-num {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 56rpx;
+    line-height: 1;
+    color: $ivory;
+  }
+
+  &__stat-label {
+    margin-top: 12rpx;
+    font-size: 22rpx;
+    letter-spacing: 3rpx;
+    color: rgba(255, 249, 239, 0.45);
+  }
+
+  &__stats-divider {
+    width: 1rpx;
+    height: 56rpx;
+    background: rgba(255, 249, 239, 0.12);
+  }
+
+  /* ---- 记忆句 ---- */
+  &__quote {
+    margin: 56rpx auto 0;
+    max-width: 560rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  &__quote-tag {
+    font-size: 18rpx;
+    letter-spacing: 4rpx;
+    color: rgba(232, 111, 81, 0.75);
+  }
+
+  &__quote-es {
+    margin-top: 18rpx;
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-size: 28rpx;
+    line-height: 1.5;
+    color: rgba(255, 249, 239, 0.92);
+  }
+
+  &__quote-zh {
+    margin-top: 10rpx;
+    font-size: 23rpx;
+    color: rgba(255, 249, 239, 0.5);
+    letter-spacing: 2rpx;
+  }
+
+  /* ---- 操作 ---- */
+  &__actions {
+    margin-top: auto;
+    padding-top: 64rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20rpx;
+  }
+
+  &__btn {
+    width: 100%;
+    height: 96rpx;
+    line-height: 96rpx;
+    border-radius: 48rpx;
+    background: $terra;
+    color: $ivory;
+    font-size: 32rpx;
+    font-weight: 600;
+    letter-spacing: 4rpx;
+    border: none;
+    margin: 0;
+    padding: 0;
+    box-shadow: 0 8rpx 32rpx rgba(232, 111, 81, 0.28);
+
+    &::after {
+      border: none;
+    }
+
+    &--ghost {
+      background: transparent;
+      border: 1rpx solid rgba(255, 249, 239, 0.28);
+      color: rgba(255, 249, 239, 0.9);
+      font-weight: 400;
+      box-shadow: none;
+    }
+  }
+
+  &__home {
+    font-size: 26rpx;
+    color: rgba(242, 196, 109, 0.75);
+    padding: 12rpx 48rpx;
+    letter-spacing: 2rpx;
+  }
+}

@@ -265,6 +265,92 @@ export function toggleFavorite(unitId: string): boolean {
   return true;
 }
 
+// ============ 星轨打卡（Phase 13：每日完成目标后的仪式页数据） ============
+// 词轨数据：会话完成时写入（当日真实学习的 N 词），打卡页读取渲染；
+// 打卡记录：按日期幂等（刷新/重复进入不会重复打卡）。
+// 连续学习天数不在此处累加——它始终由 activity 派生（streakDaysLocal），
+// 因此页面刷新/重复进入天然不会重复计数。
+
+const KEY_ORBIT_WORDS = "xz_orbit_words";
+const KEY_CHECKIN = "xz_checkin";
+
+export interface OrbitWord {
+  id: string;
+  spanish: string;
+  chinese: string;
+}
+
+export interface OrbitRecord {
+  date: string; // YYYY-MM-DD（与 todayKey 同一 UTC 约定）
+  words: OrbitWord[];
+  savedAt: number;
+}
+
+/** 会话完成时写入当次学习的词（同一天多次会话自动合并去重，供打卡页读取） */
+export function setLastOrbitWords(words: OrbitWord[]): void {
+  try {
+    const prev = getLastOrbit();
+    const base = prev ? prev.words : [];
+    const seen = new Set(base.map((w) => w.id));
+    const merged = base
+      .concat(words.filter((w) => !seen.has(w.id)))
+      .slice(-60); // 限量：兼容未来 30 词/天的目标，防无限增长
+    const rec: OrbitRecord = {
+      date: todayKey(),
+      words: merged,
+      savedAt: Date.now(),
+    };
+    Taro.setStorageSync(KEY_ORBIT_WORDS, JSON.stringify(rec));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 读取当次词轨记录；非当日/损坏返回 null（打卡页走静态兜底） */
+export function getLastOrbit(): OrbitRecord | null {
+  try {
+    const raw = Taro.getStorageSync(KEY_ORBIT_WORDS);
+    if (!raw) return null;
+    const rec = JSON.parse(raw) as OrbitRecord;
+    if (!rec || rec.date !== todayKey() || !Array.isArray(rec.words)) return null;
+    return rec;
+  } catch {
+    return null;
+  }
+}
+
+/** 今天是否已打卡 */
+export function isCheckedInToday(): boolean {
+  try {
+    const raw = Taro.getStorageSync(KEY_CHECKIN);
+    const map = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+    return Boolean(map[todayKey()]);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 标记今日打卡（幂等）：首次调用写入并返回 true，之后返回 false。
+ * 只保留最近 90 天记录，防存储增长。
+ */
+export function markCheckinToday(): boolean {
+  try {
+    const raw = Taro.getStorageSync(KEY_CHECKIN);
+    const map = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+    const k = todayKey();
+    if (map[k]) return false;
+    map[k] = Date.now();
+    const keys = Object.keys(map).sort().slice(-90);
+    const trimmed: Record<string, number> = {};
+    for (const key of keys) trimmed[key] = map[key];
+    Taro.setStorageSync(KEY_CHECKIN, JSON.stringify(trimmed));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ============ 云端同步（Phase 3：LWW 状态同步的本地记账） ============
 
 const KEY_LAST_MUTATION = "xz_last_mutation"; // 本地最后一次学习状态变更（ms 时间戳）
