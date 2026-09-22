@@ -206,7 +206,7 @@ export async function queryOrder(orderId: string): Promise<OrderStatusResult> {
   );
 }
 
-// ============ 兑换码激活（第一版售卖：客服收款 → 发码 → 激活终身 Pro） ============
+// ============ 兑换码激活（售卖：客服收款 ¥29.9/年 → 发码 → 激活年费 Pro） ============
 
 export interface RedeemResult {
   ok: boolean;

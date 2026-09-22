@@ -1,5 +1,5 @@
-// 会员页 — Free / Pro 展示 + 开通引导（第一版售卖模式）
-// 售卖链路：添加客服微信 HOME6814 购买（¥99.9 终身）→ 获得兑换码 → 本页输入激活
+// 会员页 — Free / Pro 展示 + 开通引导（当前售卖模式）
+// 售卖链路：添加客服微信 HOME6814 购买（¥29.9 / 年）→ 获得兑换码 → 本页输入激活
 // 所有价格 / 额度 / 权益均来自 config/membership.ts（统一配置）
 import { useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
@@ -21,7 +21,7 @@ import { Loading } from "../../components/states";
 import csWechatQr from "../../assets/cs-wechat-qr.jpg";
 import "./index.scss";
 
-const plan = PRICING_PLANS[0]; // 唯一方案：终身 ¥99.9
+const plan = PRICING_PLANS[0]; // 唯一方案：年会员 ¥29.9
 
 export default function MembershipPage() {
   const [m, setM] = useState<MembershipView>(() => getCachedMembership());
@@ -117,16 +117,16 @@ export default function MembershipPage() {
 
       {!loading && !m.isPro && (
         <View>
-          {/* 终身价卡片（唯一方案） */}
+          {/* 年费卡片（唯一方案） */}
           <View className="member__plans">
             <View className="member__plan member__plan--rec">
-              <Text className="member__plan-badge">限时买断</Text>
+              <Text className="member__plan-badge">限时年价</Text>
               <Text className="member__plan-name">{plan.name}</Text>
               <Text className="member__plan-price">
                 <Text className="member__plan-cur">¥</Text>
                 {plan.price}
               </Text>
-              <Text className="member__plan-permonth">终身使用</Text>
+              <Text className="member__plan-permonth">12 个月有效</Text>
               <Text className="member__plan-note">{plan.note}</Text>
               <Button
                 className="member__buy-btn member__buy-btn--card"
@@ -188,7 +188,7 @@ export default function MembershipPage() {
           {/* 说明 */}
           <View className="member__buy">
             <Text className="member__buy-hint">
-              一次买断 · 解锁全部 {TOTAL_UNITS} 词 · 支持所有后续更新
+              ¥29.9 / 年 · 解锁全部 {TOTAL_UNITS} 词 · 支持所有后续更新
             </Text>
           </View>
         </View>
@@ -201,8 +201,8 @@ export default function MembershipPage() {
             <Text className="svc__close" onClick={closeService}>
               ✕
             </Text>
-            <Text className="svc__title">开通 Pro 终身会员</Text>
-            <Text className="svc__desc">微信扫码添加客服，付款后发放兑换码</Text>
+            <Text className="svc__title">开通 Pro 年会员</Text>
+            <Text className="svc__desc">微信扫码添加客服，付款 ¥29.9 后发放兑换码</Text>
             <Image
               className="svc__qr"
               src={csWechatQr}

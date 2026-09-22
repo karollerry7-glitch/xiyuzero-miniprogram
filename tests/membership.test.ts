@@ -16,7 +16,7 @@ import {
 import {
   FREE_DAILY_NEW_WORD_LIMIT,
   FREE_LEVELS,
-  PRO_LIFETIME_PRICE,
+  PRO_YEARLY_PRICE,
 } from "../src/config/membership.js";
 
 function freeView(usage?: MembershipView["usage"]): MembershipView {
@@ -47,9 +47,9 @@ const DAY = 24 * 60 * 60 * 1000;
 const today = new Date().toISOString().slice(0, 10);
 
 // ---- 统一配置 ----
-test("统一配置：Free 每日 10 词、终身价、等级边界", () => {
+test("统一配置：Free 每日 10 词、年费价、等级边界", () => {
   assert.equal(FREE_DAILY_NEW_WORD_LIMIT, 10);
-  assert.equal(PRO_LIFETIME_PRICE, 99.9);
+  assert.equal(PRO_YEARLY_PRICE, 29.9);
   assert.deepEqual(FREE_LEVELS, ["Starter", "A1"]);
 });
 
