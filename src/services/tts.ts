@@ -40,6 +40,13 @@ const MAX_CACHE = 12;
 const cache = new Map<string, CachedAudio>(); // url → 本地临时路径
 const inflight = new Map<string, Promise<string>>(); // 并发去重
 
+// 全局音频选项：iOS 静音键下仍可外放
+try {
+  Taro.setInnerAudioOption({ obeyMuteSwitch: false });
+} catch {
+  /* 低版本基础库忽略 */
+}
+
 /** 错误提示节流：10 秒内最多弹一次 */
 let lastErrToastAt = 0;
 function notifyError(detail: string): void {
@@ -114,6 +121,8 @@ function download(url: string): Promise<string> {
 interface Slot {
   ctx: Taro.InnerAudioContext;
   used: number;
+  /** 新设 src 后等待 onCanplay 再补一次 play（iOS 首播吞 play 的兜底） */
+  pendingPlay: boolean;
 }
 
 const MAX_SLOTS = 4;
@@ -123,13 +132,35 @@ function slotFor(): Slot {
   if (slots.length < MAX_SLOTS) {
     const ctx = Taro.createInnerAudioContext();
     ctx.obeyMuteSwitch = false;
-    slots.push({ ctx, used: 0 });
-    return slots[slots.length - 1];
+    ctx.volume = 1;
+    // 播放失败必须浮出（此前静默失败导致无提示）
+    ctx.onError((e) => {
+      const detail = e.errMsg || `errCode ${e.errCode ?? "?"}`;
+      notifyError(`本地播放失败：${detail}`.slice(0, 40));
+    });
+    const slot: Slot = { ctx, used: 0, pendingPlay: false };
+    ctx.onCanplay(() => {
+      if (slot.pendingPlay) {
+        slot.pendingPlay = false;
+        try {
+          slot.ctx.play();
+        } catch {
+          /* ignore */
+        }
+      }
+    });
+    slots.push(slot);
+    return slot;
   }
   return slots.reduce((a, b) => (a.used < b.used ? a : b));
 }
 
-/** 播放本地文件（同文件重听从头播；iOS 上 stop 异步 → 延迟 50ms 兼容） */
+/**
+ * 播放本地文件。
+ * - 新 src：设 src 后立即 play（开发者工具/安卓直接响）；iOS 首播 play 可能
+ *   被吞 → onCanplay 里再补一次（pendingPlay 标记，双保险不重复起播）。
+ * - 同文件重听：stop 后延迟 50ms 再 play（iOS 异步 stop 吞 play 的兼容）。
+ */
 function playLocal(slot: Slot, path: string): void {
   slot.used = Date.now();
   for (const s of slots) {
@@ -141,12 +172,17 @@ function playLocal(slot: Slot, path: string): void {
       }
     }
   }
-  const needRestart = slot.ctx.src === path && slot.ctx.currentTime > 0;
   if (slot.ctx.src !== path) {
+    slot.pendingPlay = true;
     slot.ctx.stop();
     slot.ctx.src = path;
-  }
-  if (needRestart) {
+    try {
+      slot.ctx.play();
+    } catch {
+      /* ignore */
+    }
+  } else {
+    slot.pendingPlay = false;
     slot.ctx.stop();
     setTimeout(() => {
       try {
@@ -155,12 +191,6 @@ function playLocal(slot: Slot, path: string): void {
         /* ignore */
       }
     }, 50);
-  } else {
-    try {
-      slot.ctx.play();
-    } catch {
-      /* ignore */
-    }
   }
 }
 
