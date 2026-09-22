@@ -3,7 +3,7 @@
 // 所有价格 / 额度 / 权益均来自 config/membership.ts（统一配置）
 import { useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
-import { View, Text, Button, Input } from "@tarojs/components";
+import { View, Text, Button, Input, Image } from "@tarojs/components";
 import {
   CUSTOMER_SERVICE_WECHAT,
   PLAN_FEATURES,
@@ -18,6 +18,7 @@ import {
 } from "../../services/membership";
 import { ApiError } from "../../services/request";
 import { Loading } from "../../components/states";
+import csWechatQr from "../../assets/cs-wechat-qr.jpg";
 import "./index.scss";
 
 const plan = PRICING_PLANS[0]; // 唯一方案：终身 ¥99.9
@@ -27,6 +28,7 @@ export default function MembershipPage() {
   const [loading, setLoading] = useState(true);
   const [code, setCode] = useState("");
   const [redeeming, setRedeeming] = useState(false);
+  const [showService, setShowService] = useState(false);
 
   useEffect(() => {
     fetchMembership()
@@ -43,25 +45,17 @@ export default function MembershipPage() {
     });
   };
 
-  /** 开通引导：弹窗展示客服微信，确认即复制 */
-  const onUpgrade = () => {
-    Taro.showModal({
-      title: "开通 Pro 终身会员",
-      content: `添加客服微信购买\n\n微信号：${CUSTOMER_SERVICE_WECHAT}\n\n付款后客服将发放兑换码，\n返回本页输入兑换码即可永久激活。`,
-      confirmText: "复制微信号",
-      cancelText: "暂不开通",
-      success: (res) => {
-        if (res.confirm) {
-          Taro.setClipboardData({
-            data: CUSTOMER_SERVICE_WECHAT,
-            success: () => {
-              Taro.showToast({
-                title: "已复制，去微信添加客服",
-                icon: "none",
-              });
-            },
-          });
-        }
+  /** 开通引导：打开客服弹窗（二维码 + 微信号） */
+  const onUpgrade = () => setShowService(true);
+
+  const closeService = () => setShowService(false);
+
+  /** 复制客服微信号 */
+  const copyWechat = () => {
+    Taro.setClipboardData({
+      data: CUSTOMER_SERVICE_WECHAT,
+      success: () => {
+        Taro.showToast({ title: "已复制，去微信添加客服", icon: "none" });
       },
     });
   };
@@ -196,6 +190,33 @@ export default function MembershipPage() {
             <Text className="member__buy-hint">
               一次买断 · 解锁全部 {TOTAL_UNITS} 词 · 支持所有后续更新
             </Text>
+          </View>
+        </View>
+      )}
+
+      {/* 客服微信弹窗（二维码 + 微信号 + 复制） */}
+      {showService && (
+        <View className="svc" onClick={closeService}>
+          <View className="svc__card" onClick={(e) => e.stopPropagation()}>
+            <Text className="svc__close" onClick={closeService}>
+              ✕
+            </Text>
+            <Text className="svc__title">开通 Pro 终身会员</Text>
+            <Text className="svc__desc">微信扫码添加客服，付款后发放兑换码</Text>
+            <Image
+              className="svc__qr"
+              src={csWechatQr}
+              mode="aspectFit"
+              showMenuByLongpress
+            />
+            <Text className="svc__qr-hint">长按识别二维码 · 添加客服微信</Text>
+            <View className="svc__wx-row">
+              <Text className="svc__wx-label">微信号</Text>
+              <Text className="svc__wx-id">{CUSTOMER_SERVICE_WECHAT}</Text>
+            </View>
+            <Button className="svc__copy" onClick={copyWechat}>
+              复制微信号
+            </Button>
           </View>
         </View>
       )}

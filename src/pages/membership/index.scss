@@ -269,3 +269,103 @@
     }
   }
 }
+
+/* ---- 客服微信弹窗 ---- */
+.svc {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: rgba(24, 34, 48, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+
+  &__card {
+    position: relative;
+    width: 100%;
+    max-width: 600rpx;
+    background: #ffffff;
+    border-radius: $radius-card;
+    padding: 48rpx 40rpx 40rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 20rpx 60rpx rgba(24, 34, 48, 0.25);
+  }
+
+  &__close {
+    position: absolute;
+    top: 20rpx;
+    right: 28rpx;
+    font-size: 36rpx;
+    color: $ink-40;
+    padding: 8rpx;
+    line-height: 1;
+  }
+
+  &__title {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: $ink;
+  }
+
+  &__desc {
+    margin-top: 10rpx;
+    font-size: 24rpx;
+    color: $ink-50;
+    text-align: center;
+  }
+
+  &__qr {
+    width: 400rpx;
+    height: 400rpx;
+    margin-top: 32rpx;
+    border-radius: 16rpx;
+    background: #fafbfc;
+  }
+
+  &__qr-hint {
+    margin-top: 16rpx;
+    font-size: 22rpx;
+    color: $ink-40;
+  }
+
+  &__wx-row {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    margin-top: 28rpx;
+    padding: 18rpx 32rpx;
+    background: #f5f6f8;
+    border-radius: 999rpx;
+  }
+
+  &__wx-label {
+    font-size: 24rpx;
+    color: $ink-50;
+  }
+
+  &__wx-id {
+    font-size: 30rpx;
+    font-weight: 700;
+    color: $ink;
+    letter-spacing: 1rpx;
+  }
+
+  &__copy {
+    margin-top: 28rpx;
+    width: 100%;
+    height: 88rpx;
+    line-height: 88rpx;
+    padding: 0;
+    background: $red !important;
+    color: #ffffff !important;
+    font-size: 30rpx;
+    font-weight: 600;
+    border-radius: $radius-btn;
+  }
+}
