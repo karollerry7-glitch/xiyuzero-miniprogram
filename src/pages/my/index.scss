@@ -40,6 +40,27 @@
     color: $ink;
   }
 
+  &__nick-tip {
+    margin-top: 6rpx;
+    font-size: 24rpx;
+    color: rgba(232, 111, 81, 0.9);
+  }
+
+  &__login-btn {
+    margin-top: 10rpx;
+    padding: 10rpx 28rpx;
+    border-radius: 999rpx;
+    background: #07c160;
+    display: inline-flex;
+    align-self: flex-start;
+
+    &-text {
+      font-size: 24rpx;
+      color: #ffffff;
+      font-weight: 600;
+    }
+  }
+
   &__err {
     margin-top: 6rpx;
     font-size: 24rpx;

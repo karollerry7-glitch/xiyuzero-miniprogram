@@ -35,7 +35,7 @@ export class ApiError extends Error {
 }
 
 export interface RequestOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   data?: Record<string, unknown>;
   query?: Record<string, string | number | undefined>;
   /** 401 时是否自动重登一次（默认 true，防循环） */

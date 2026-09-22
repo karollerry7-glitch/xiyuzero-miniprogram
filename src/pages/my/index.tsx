@@ -5,6 +5,7 @@ import { useState } from "react";
 import { View, Text } from "@tarojs/components";
 import { useAuth } from "../../services/auth";
 import { getCachedMembership } from "../../services/membership";
+import { DEFAULT_NICKNAME } from "../../config/membership";
 import { dimensionMastery, mySummary, recentTrend, wrongWords } from "../../shared/stats";
 import { getActivity, getFavorites, getReviewsCache } from "../../utils/storage";
 import type { DayActivity, ReviewState } from "../../shared/types";
@@ -119,6 +120,16 @@ export default function MyPage() {
             >
               <Text className="my__login-btn-text">微信一键登录</Text>
             </View>
+          )}
+          {user && user.nickname === DEFAULT_NICKNAME && (
+            <Text
+              className="my__nick-tip"
+              onClick={() => {
+                Taro.navigateTo({ url: "/pages/login/index" });
+              }}
+            >
+              点击设置昵称 ✎
+            </Text>
           )}
           <Text className="my__level">{planText} · 已学 {s.learnedTotal} 词</Text>
         </View>

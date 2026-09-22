@@ -55,6 +55,18 @@ export function logout(): void {
   clearToken();
 }
 
+/** 设置昵称（登录后引导第二步；PATCH /api/profile） */
+export async function updateNickname(
+  nickname: string
+): Promise<ServerUser> {
+  const res = await request<{ user: ServerUser }>("/api/profile", {
+    method: "PATCH",
+    data: { nickname },
+  });
+  setUser(res.user);
+  return res.user;
+}
+
 /** 页面级登录 Hook：挂载时静默登录，暴露用户/加载/错误/重试 */
 export function useAuth() {
   const [user, setUserState] = useState<ServerUser | null>(() => getUser());

@@ -108,6 +108,19 @@
     color: #ffffff;
   }
 
+  &__input {
+    width: 100%;
+    height: 96rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 249, 239, 0.08);
+    border: 1rpx solid rgba(255, 249, 239, 0.18);
+    padding: 0 44rpx;
+    box-sizing: border-box;
+    font-size: 30rpx;
+    color: #fff9ef;
+    margin-bottom: 36rpx;
+  }
+
   &__err {
     margin-top: 22rpx;
     font-size: 24rpx;

@@ -21,6 +21,9 @@ export const PRO_LIFETIME_PRICE = 99.9;
 export const PRO_MONTHLY_PRICE = 19.9;
 export const PRO_YEARLY_PRICE = 128;
 
+/** 默认昵称（与服务端 lib/profile.ts DEFAULT_NICKNAME 保持一致） */
+export const DEFAULT_NICKNAME = "西语学员";
+
 /** 购买咨询客服微信（会员页展示，可点击复制） */
 export const CUSTOMER_SERVICE_WECHAT = "HOME6814";
 
