@@ -23,10 +23,18 @@ import "./index.scss";
 
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
+/** 顶部「回到首页」小图标（SVG：象牙白细线小房子） */
+const HOME_ICON =
+  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyNCcgaGVpZ2h0PScyNCcgdmlld0JveD0nMCAwIDI0IDI0JyBmaWxsPSdub25lJyBzdHJva2U9JyNGRkY5RUYnIHN0cm9rZS1vcGFjaXR5PScwLjg1JyBzdHJva2Utd2lkdGg9JzEuNicgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJz48cGF0aCBkPSdNMy4yIDExLjQgMTIgNC40bDguOCA3Jy8+PHBhdGggZD0nTTUuOCAxMC4yVjE5LjhoMTIuNFYxMC4yJy8+PHBhdGggZD0nTTEwIDE5Ljh2LTVoNHY1Jy8+PC9zdmc+";
+
 interface NavMetrics {
   padTop: number; // 状态栏高度 px
-  closeTop: number; // 关闭按钮 top px（与胶囊对齐）
-  closeRight: number; // 关闭按钮 right px（避开胶囊）
+  closeTop: number; // 首页图标 top px（与胶囊对齐）
+  closeRight: number; // 首页图标 right px（避开胶囊）
+  /** 星轨边长（rpx）：可用高度的 38%~42%，页面单屏自适应的核心参数 */
+  orbitSize: number;
+  /** 可用高度 < 700px → 紧凑模式（缩短间距、隐藏装饰） */
+  compact: boolean;
 }
 
 export default function OrbitPage() {
@@ -40,6 +48,8 @@ export default function OrbitPage() {
     padTop: 20,
     closeTop: 26,
     closeRight: 96,
+    orbitSize: 560,
+    compact: false,
   });
 
   // ---- 初始化：读取当日真实学习记录（无记录时静态兜底） ----
@@ -75,7 +85,7 @@ export default function OrbitPage() {
     return () => clearInterval(t);
   }, [total]);
 
-  // ---- 导航布局（状态栏 + 避开右上角胶囊） ----
+  // ---- 导航布局 + 单屏自适应参数（状态栏 / 胶囊避让 / 星轨尺寸 / 紧凑模式） ----
   useEffect(() => {
     try {
       const info = Taro.getSystemInfoSync();
@@ -90,10 +100,21 @@ export default function OrbitPage() {
       } catch {
         /* 部分环境无胶囊信息：用兜底值 */
       }
+      const wh = info.windowHeight || 667;
+      const ww = info.windowWidth || 375;
+      const compact = wh < 700;
+      // 星轨占可用高度 38%（紧凑）~42%（标准），px → rpx 换算并夹紧
+      const orbitPx = Math.min(
+        400,
+        Math.max(240, wh * (compact ? 0.38 : 0.42))
+      );
+      const orbitSize = Math.round(orbitPx * (750 / ww));
       setNav({
         padTop: info.statusBarHeight || 20,
         closeTop,
         closeRight,
+        orbitSize,
+        compact,
       });
     } catch {
       /* 保底默认值 */
@@ -141,10 +162,10 @@ export default function OrbitPage() {
   };
 
   return (
-    <View className="orbit">
+    <View className={`orbit ${nav.compact ? "orbit--compact" : ""}`}>
       <View className="orbit__bg" />
 
-      {/* ---- 顶部：日期 + 今日已完成 + 关闭 ---- */}
+      {/* ---- 顶部：日期 + 今日已完成 + 首页图标 ---- */}
       <View className="orbit__nav" style={{ paddingTop: `${nav.padTop}px` }}>
         <View className="orbit__nav-inner">
           <Text className="orbit__date">{dateText}</Text>
@@ -155,11 +176,11 @@ export default function OrbitPage() {
           style={{ top: `${nav.closeTop}px`, right: `${nav.closeRight}px` }}
           onClick={goHome}
         >
-          <Text>✕</Text>
+          <Image className="orbit__close-icon" src={HOME_ICON} mode="aspectFit" />
         </View>
       </View>
 
-      {/* ---- 用户专属问候（头像 + Hi 昵称，介于标题与星轨之间） ---- */}
+      {/* ---- 用户专属问候（头像 + Hi 昵称） ---- */}
       <View className="orbit__greet">
         {avatarUrl ? (
           <Image
@@ -181,7 +202,7 @@ export default function OrbitPage() {
         </View>
       </View>
 
-      {/* ---- 星轨主视觉 ---- */}
+      {/* ---- 星轨主视觉（flex:1 吸收富余高度，保证单屏） ---- */}
       <View className="orbit__visual">
         <StarOrbit
           words={words}
@@ -190,40 +211,37 @@ export default function OrbitPage() {
           activeId={activeId}
           onStarTap={onStarTap}
           instant={words.length === 0}
+          size={nav.orbitSize}
+          compact={nav.compact}
         />
       </View>
 
-      {/* ---- 文案 ---- */}
+      {/* ---- 完成信息（紧贴星轨） ---- */}
       <View className="orbit__phrase">
+        <Text className="orbit__phrase-zh">今日学习完成</Text>
         <Text className="orbit__phrase-es">
           Hoy estás {total} {total === 1 ? "palabra" : "palabras"} más cerca.
         </Text>
-        <Text className="orbit__phrase-zh">
-          今天，你又离西班牙语更近了{total}个单词
+      </View>
+
+      {/* ---- 学习数据（横向并排小数据栏） ---- */}
+      <View className="orbit__stats">
+        <Text className="orbit__stat">
+          连续学习 <Text className="orbit__stat-num">{stats.streak}</Text> 天
+        </Text>
+        <View className="orbit__stats-divider" />
+        <Text className="orbit__stat">
+          本周累计 <Text className="orbit__stat-num">{stats.week}</Text> 词
         </Text>
       </View>
 
-      {/* ---- 连续学习信息（简洁数字排版） ---- */}
-      <View className="orbit__stats">
-        <View className="orbit__stat">
-          <Text className="orbit__stat-num">{stats.streak}</Text>
-          <Text className="orbit__stat-label">连续学习 · 天</Text>
-        </View>
-        <View className="orbit__stats-divider" />
-        <View className="orbit__stat">
-          <Text className="orbit__stat-num">{stats.week}</Text>
-          <Text className="orbit__stat-label">本周累计 · 词</Text>
-        </View>
-      </View>
-
-      {/* ---- 今日记忆句 ---- */}
+      {/* ---- 今日记忆句（两行） ---- */}
       <View className="orbit__quote">
-        <Text className="orbit__quote-tag">RECUERDO DEL DÍA · 今日记忆句</Text>
         <Text className="orbit__quote-es">{quote.es}</Text>
         <Text className="orbit__quote-zh">{quote.zh}</Text>
       </View>
 
-      {/* ---- 操作 ---- */}
+      {/* ---- 操作：横排双按钮 ---- */}
       <View className="orbit__actions">
         <Button className="orbit__btn" onClick={() => setPosterOpen(true)}>
           生成今日词轨
@@ -231,12 +249,9 @@ export default function OrbitPage() {
         <Button className="orbit__btn orbit__btn--ghost" onClick={goReview}>
           继续复习
         </Button>
-        <Text className="orbit__home" onClick={goHome}>
-          回到首页
-        </Text>
       </View>
 
-      {/* ---- 品牌署名（沃天岚 · 西语ZERO） ---- */}
+      {/* ---- 品牌署名（页面内容底部，不遮挡按钮） ---- */}
       <View className="orbit__brand">
         <View className="orbit__brand-line">
           <Text className="orbit__brand-main">沃天岚</Text>

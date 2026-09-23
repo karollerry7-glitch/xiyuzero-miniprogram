@@ -7,11 +7,10 @@ $ivory: #fff9ef;
 
 .so {
   position: relative;
-  width: 608rpx;
-  height: 608rpx;
   margin: 0 auto;
   padding: 24rpx;
   box-sizing: border-box;
+  /* 宽高由页面按可用高度以 inline style 注入（单屏自适应） */
 
   /* 中央暖光晕 */
   &::before {
@@ -31,21 +30,15 @@ $ivory: #fff9ef;
     pointer-events: none;
   }
 
-  /* 轨道区（560rpx，四周各留 24rpx 呼吸空间） */
+  /* 轨道区（宽高由 inline style 注入，四周各留 24rpx 呼吸空间） */
   &__field {
     position: absolute;
-    left: 24rpx;
-    top: 24rpx;
-    width: 560rpx;
-    height: 560rpx;
   }
 
   &__dust {
     position: absolute;
     left: 0;
     top: 0;
-    width: 560rpx;
-    height: 560rpx;
     pointer-events: none;
   }
 
@@ -60,8 +53,6 @@ $ivory: #fff9ef;
     position: absolute;
     left: 0;
     top: 0;
-    width: 560rpx;
-    height: 560rpx;
     animation: soRotate 1.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
   }
 
@@ -167,30 +158,24 @@ $ivory: #fff9ef;
     color: $ivory;
   }
 
-  &__core-divider {
-    margin: 16rpx 0 12rpx;
-    width: 64rpx;
-    height: 2rpx;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(242, 196, 109, 0.7),
-      transparent
-    );
-  }
-
-  &__core-sub {
-    font-size: 20rpx;
-    color: rgba(255, 249, 239, 0.55);
-    letter-spacing: 4rpx;
-    text-indent: 4rpx;
-  }
-
   /* 兜底/减动效：跳过入场 */
   &--instant &__rings,
   &--instant &__star-in,
   &--instant &__core {
     animation: none;
+  }
+
+  /* 紧凑模式（小屏）：收敛光晕、微缩中央数字与词星标签，避免重叠 */
+  &--compact::before {
+    opacity: 0.4;
+  }
+
+  &--compact &__core-num {
+    font-size: 92rpx;
+  }
+
+  &--compact &__star-label {
+    font-size: 19rpx;
   }
 }
 

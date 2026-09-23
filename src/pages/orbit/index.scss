@@ -1,5 +1,7 @@
-// 星轨打卡页 — 地中海夜空 / 深夜海军蓝 #0B1736 / 陶土橙 #E86F51
-// 暖金 #F2C46D / 象牙白 #FFF9EF；无白卡堆叠，靠留白与细分隔线营造呼吸感
+// 星轨打卡页 — 单屏版式（375×812 基准，兼容 375×667 / 430×932）
+// 地中海夜空 / 深夜海军蓝 #0B1736 / 陶土橙 #E86F51 / 暖金 #F2C46D / 象牙白 #FFF9EF
+// 布局原则：100vh Flex 纵向分配 + overflow hidden；星轨区 flex:1 吸收富余高度，
+// 保证任何常见机型一屏展示、无纵向滚动条、底部品牌完整可见。
 $night: #0b1736;
 $terra: #e86f51;
 $gold: #f2c46d;
@@ -7,14 +9,16 @@ $ivory: #fff9ef;
 
 page {
   background: $night;
+  height: 100%;
+  overflow: hidden;
 }
 
 .orbit {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
   background: $night;
   color: $ivory;
-  padding: 0 48rpx calc(56rpx + env(safe-area-inset-bottom));
+  padding: 0 40rpx calc(10rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
@@ -40,30 +44,32 @@ page {
   /* ---- 顶部 ---- */
   &__nav {
     position: relative;
-    padding-bottom: 16rpx;
+    padding-bottom: 4rpx;
+    flex-shrink: 0;
   }
 
   &__nav-inner {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 12rpx;
+    padding-top: 8rpx;
   }
 
   &__date {
-    font-size: 22rpx;
+    font-size: 20rpx;
     letter-spacing: 4rpx;
     color: rgba(255, 249, 239, 0.4);
   }
 
   &__title {
-    margin-top: 8rpx;
-    font-size: 30rpx;
+    margin-top: 4rpx;
+    font-size: 26rpx;
     letter-spacing: 8rpx;
     text-indent: 8rpx;
     color: rgba(255, 249, 239, 0.85);
   }
 
+  /* 首页图标（回到首页入口，替代原 ✕ 与底部文字链接） */
   &__close {
     position: fixed;
     width: 56rpx;
@@ -73,28 +79,28 @@ page {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28rpx;
-    color: rgba(255, 249, 239, 0.7);
     z-index: 10;
+    box-sizing: border-box;
   }
 
-  /* ---- 星轨 ---- */
-  &__visual {
-    margin-top: 8rpx;
+  &__close-icon {
+    width: 34rpx;
+    height: 34rpx;
   }
 
-  /* ---- 用户专属问候 ---- */
+  /* ---- 用户专属问候（整体 ~50–60px） ---- */
   &__greet {
-    margin-top: 28rpx;
+    margin-top: 12rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 20rpx;
+    gap: 18rpx;
+    flex-shrink: 0;
   }
 
   &__greet-avatar {
-    width: 68rpx;
-    height: 68rpx;
+    width: 56rpx;
+    height: 56rpx;
     border-radius: 50%;
     border: 2rpx solid rgba(242, 196, 109, 0.55); /* 极细暖金描边 */
     box-sizing: border-box;
@@ -107,7 +113,7 @@ page {
       background: rgba(242, 196, 109, 0.12);
 
       text {
-        font-size: 30rpx;
+        font-size: 26rpx;
         font-weight: 600;
         color: $gold;
         line-height: 1;
@@ -128,13 +134,13 @@ page {
   }
 
   &__greet-hi {
-    font-size: 24rpx;
+    font-size: 22rpx;
     color: rgba(255, 249, 239, 0.55);
     flex-shrink: 0;
   }
 
   &__greet-name {
-    font-size: 30rpx;
+    font-size: 28rpx;
     font-weight: 500;
     color: $ivory;
     overflow: hidden;
@@ -143,124 +149,125 @@ page {
   }
 
   &__greet-sub {
-    margin-top: 4rpx;
-    font-size: 20rpx;
+    margin-top: 2rpx;
+    font-size: 18rpx;
     letter-spacing: 2rpx;
     color: rgba(255, 249, 239, 0.45);
   }
 
-  /* ---- 文案 ---- */
+  /* ---- 星轨（flex:1 吸收富余高度；组件尺寸由页面按窗口高度注入） ---- */
+  &__visual {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ---- 完成信息（紧贴星轨） ---- */
   &__phrase {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 20rpx;
-  }
-
-  &__phrase-es {
-    font-family: Georgia, "Times New Roman", serif;
-    font-style: italic;
-    font-size: 30rpx;
-    color: rgba(242, 196, 109, 0.95);
+    margin-top: 8rpx;
+    flex-shrink: 0;
   }
 
   &__phrase-zh {
-    margin-top: 10rpx;
     font-size: 24rpx;
-    color: rgba(255, 249, 239, 0.6);
-    letter-spacing: 2rpx;
+    letter-spacing: 6rpx;
+    text-indent: 6rpx;
+    color: rgba(255, 249, 239, 0.85);
   }
 
-  /* ---- 统计 ---- */
+  &__phrase-es {
+    margin-top: 6rpx;
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-size: 26rpx;
+    color: rgba(242, 196, 109, 0.95);
+  }
+
+  /* ---- 学习数据（横向并排小数据栏） ---- */
   &__stats {
-    margin: 48rpx auto 0;
+    margin: 20rpx auto 0;
     display: flex;
     align-items: center;
-    gap: 64rpx;
+    gap: 36rpx;
+    flex-shrink: 0;
   }
 
   &__stat {
+    font-size: 22rpx;
+    color: rgba(255, 249, 239, 0.55);
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    align-items: baseline;
   }
 
   &__stat-num {
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 56rpx;
+    font-size: 34rpx;
     line-height: 1;
     color: $ivory;
-  }
-
-  &__stat-label {
-    margin-top: 12rpx;
-    font-size: 22rpx;
-    letter-spacing: 3rpx;
-    color: rgba(255, 249, 239, 0.45);
+    padding: 0 6rpx;
   }
 
   &__stats-divider {
     width: 1rpx;
-    height: 56rpx;
+    height: 28rpx;
     background: rgba(255, 249, 239, 0.12);
   }
 
-  /* ---- 记忆句 ---- */
+  /* ---- 今日记忆句（两行） ---- */
   &__quote {
-    margin: 56rpx auto 0;
-    max-width: 560rpx;
+    margin: 22rpx auto 0;
+    max-width: 600rpx;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-  }
-
-  &__quote-tag {
-    font-size: 18rpx;
-    letter-spacing: 4rpx;
-    color: rgba(232, 111, 81, 0.75);
+    flex-shrink: 0;
   }
 
   &__quote-es {
-    margin-top: 18rpx;
     font-family: Georgia, "Times New Roman", serif;
     font-style: italic;
-    font-size: 28rpx;
-    line-height: 1.5;
-    color: rgba(255, 249, 239, 0.92);
+    font-size: 24rpx;
+    line-height: 1.4;
+    color: rgba(255, 249, 239, 0.85);
   }
 
   &__quote-zh {
-    margin-top: 10rpx;
-    font-size: 23rpx;
+    margin-top: 4rpx;
+    font-size: 20rpx;
     color: rgba(255, 249, 239, 0.5);
     letter-spacing: 2rpx;
   }
 
-  /* ---- 操作 ---- */
+  /* ---- 操作：横排双按钮 ---- */
   &__actions {
-    margin-top: auto;
-    padding-top: 64rpx;
+    margin-top: 26rpx;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 20rpx;
+    gap: 24rpx;
+    flex-shrink: 0;
   }
 
   &__btn {
-    width: 100%;
-    height: 96rpx;
-    line-height: 96rpx;
-    border-radius: 48rpx;
+    flex: 1;
+    height: 84rpx;
+    line-height: 84rpx;
+    border-radius: 42rpx;
     background: $terra;
     color: $ivory;
-    font-size: 32rpx;
+    font-size: 28rpx;
     font-weight: 600;
-    letter-spacing: 4rpx;
+    letter-spacing: 3rpx;
     border: none;
     margin: 0;
     padding: 0;
-    box-shadow: 0 8rpx 32rpx rgba(232, 111, 81, 0.28);
+    box-shadow: 0 8rpx 28rpx rgba(232, 111, 81, 0.26);
+    box-sizing: border-box;
 
     &::after {
       border: none;
@@ -275,50 +282,84 @@ page {
     }
   }
 
-  &__home {
-    font-size: 26rpx;
-    color: rgba(242, 196, 109, 0.75);
-    padding: 12rpx 48rpx;
-    letter-spacing: 2rpx;
-  }
-
-  /* ---- 品牌署名：沃天岚 · 西语ZERO ---- */
+  /* ---- 品牌署名（页面内容底部） ---- */
   &__brand {
-    margin-top: 44rpx;
+    margin-top: 22rpx;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12rpx;
+    gap: 8rpx;
+    flex-shrink: 0;
   }
 
   &__brand-line {
     display: flex;
     align-items: baseline;
-    gap: 12rpx;
+    gap: 10rpx;
   }
 
   &__brand-main {
-    font-size: 34rpx;
+    font-size: 30rpx;
     font-weight: 600;
     letter-spacing: 3rpx;
     color: $ivory;
   }
 
   &__brand-dot {
-    font-size: 24rpx;
+    font-size: 22rpx;
     color: rgba(242, 196, 109, 0.6);
   }
 
   /* 副标识：比主品牌小约 30%、降透明度 */
   &__brand-sub {
-    font-size: 24rpx;
+    font-size: 21rpx;
     letter-spacing: 1rpx;
     color: rgba(255, 249, 239, 0.5);
   }
 
   &__brand-tag {
-    font-size: 18rpx;
-    letter-spacing: 6rpx;
+    font-size: 16rpx;
+    letter-spacing: 5rpx;
     color: rgba(255, 249, 239, 0.35);
+  }
+
+  /* ---- 紧凑模式（可用高度 < 700px）：缩短模块间距，保留全部核心内容 ---- */
+  &--compact {
+    &__greet {
+      margin-top: 8rpx;
+    }
+
+    &__phrase-zh {
+      font-size: 22rpx;
+    }
+
+    &__phrase-es {
+      font-size: 24rpx;
+    }
+
+    &__stats {
+      margin-top: 14rpx;
+    }
+
+    &__quote {
+      margin-top: 14rpx;
+    }
+
+    &__quote-es {
+      font-size: 22rpx;
+    }
+
+    &__quote-zh {
+      font-size: 18rpx;
+    }
+
+    &__actions {
+      margin-top: 18rpx;
+    }
+
+    &__brand {
+      margin-top: 14rpx;
+      gap: 6rpx;
+    }
   }
 }
