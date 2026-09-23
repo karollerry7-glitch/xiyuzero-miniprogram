@@ -1,5 +1,5 @@
 // 今日词轨海报 — Canvas 2D 绘制可分享打卡图
-// 内容：日期 / 星轨主视觉（N 词） / 连续天数与本周累计 / 记忆句 / 西语ZERO 品牌标识
+// 内容：日期 / 星轨主视觉（N 词） / 连续天数与本周累计 / 记忆句 / 西语 品牌标识
 // 不含任何用户敏感信息（无昵称、无头像、无 OpenID）。
 import { useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
@@ -165,10 +165,10 @@ function drawPoster(
   ctx.font = "20px sans-serif";
   ctx.fillText(q.zh, cx, 1026);
 
-  // ---- 品牌（组合署名，同一基线：沃天岚 · 西语ZERO） ----
-  const brandMain = "沃天岚";
+  // ---- 品牌（组合署名，同一基线：沃天澜 · 西语） ----
+  const brandMain = "沃天澜";
   const brandSep = " · ";
-  const brandSub = "西语ZERO";
+  const brandSub = "西语";
   const brandY = 1118;
   ctx.font = "600 34px sans-serif";
   const wMain = ctx.measureText(brandMain).width;

@@ -92,7 +92,7 @@ export default function MembershipPage() {
         <Text className="member__back" onClick={back}>
           ←
         </Text>
-        <Text className="member__title">西语Zero Pro</Text>
+        <Text className="member__title">沃天澜 Pro</Text>
         <Text className="member__topbar-ph" />
       </View>
 

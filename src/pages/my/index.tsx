@@ -27,7 +27,7 @@ const MENU: MenuItem[] = [
   { key: "bind", label: "账户绑定", arrow: true },
   { key: "privacy", label: "隐私政策", arrow: true },
   { key: "terms", label: "用户协议", arrow: true },
-  { key: "about", label: "关于西语Zero", arrow: true },
+  { key: "about", label: "关于沃天澜", arrow: true },
 ];
 
 /** PRO 到期时间（YYYY-MM-DD），lifetime / 未知返回 null */
@@ -241,7 +241,7 @@ export default function MyPage() {
         ))}
       </View>
 
-      <Text className="my__footer">西语Zero · learn.xiyuzero.com</Text>
+      <Text className="my__footer">沃天澜 · learn.xiyuzero.com</Text>
     </View>
   );
 }

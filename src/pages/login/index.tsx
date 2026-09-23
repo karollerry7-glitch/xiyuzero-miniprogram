@@ -125,7 +125,7 @@ export default function LoginPage() {
       <View className="login">
         <View className="login__brand">
           <View className="login__logo">
-            <Text className="login__logo-text">Z</Text>
+            <Text className="login__logo-text">沃</Text>
           </View>
           <Text className="login__title">怎么称呼你？</Text>
           <Text className="login__es">¿Cómo te llamas?</Text>
@@ -170,9 +170,9 @@ export default function LoginPage() {
       {/* 品牌 */}
       <View className="login__brand">
         <View className="login__logo">
-          <Text className="login__logo-text">Z</Text>
+          <Text className="login__logo-text">沃</Text>
         </View>
-        <Text className="login__title">西语ZERO</Text>
+        <Text className="login__title">沃天澜</Text>
         <Text className="login__es">Español desde cero</Text>
         <Text className="login__sub">从零开始的西班牙语词汇宇宙</Text>
       </View>

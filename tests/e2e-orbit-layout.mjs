@@ -73,7 +73,7 @@ try {
   const btns = await page.$$(".orbit__btn");
   assert.equal(btns.length, 2, "操作区应为两个横排按钮");
   const brandMain = await (await page.$(".orbit__brand-main")).text();
-  assert.ok(brandMain.includes("沃天岚"), "品牌主名称应为「沃天岚」");
+  assert.ok(brandMain.includes("沃天澜"), "品牌主名称应为「沃天澜」");
   const brandTag = await (await page.$(".orbit__brand-tag")).text();
   assert.ok(brandTag.includes("每天认识一点新的世界"), `品牌标语缺失: ${brandTag}`);
   console.log("✓ 内容：昵称问候 / 10 词星轨 / 完成信息 / 横排数据 / 两行记忆句 / 双按钮 / 品牌署名");

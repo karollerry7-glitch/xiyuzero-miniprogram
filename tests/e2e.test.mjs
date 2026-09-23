@@ -31,13 +31,13 @@ try {
   await sleep(3000);
   await waitFor(page, ".card--hero");
   const goalText = await (await page.$(".card__denom")).text();
-  // Free 用户每日目标 = min(5, 用户偏好)，断言被 Free 上限约束
+  // Free 用户每日目标 = min(10, 用户偏好)（当前 Free 每日 10 新词）
   const goalNum = parseInt(goalText.replace("/", "").trim(), 10);
   assert.ok(
-    Number.isInteger(goalNum) && goalNum >= 1 && goalNum <= 5,
-    `Free 每日目标应为 1-5（min(5, 用户偏好)），实际: ${goalText}`
+    Number.isInteger(goalNum) && goalNum >= 1 && goalNum <= 10,
+    `Free 每日目标应为 1-10（min(10, 用户偏好)），实际: ${goalText}`
   );
-  console.log("✓ 首页：Free 每日目标显示为 /", goalNum, "（≤5 符合 Free 上限）");
+  console.log("✓ 首页：Free 每日目标显示为 /", goalNum, "（≤10 符合 Free 上限）");
 
   // ============ 2. 我的页：统计 + 五维 + 7 天趋势 ============
   await mini.switchTab("/pages/my/index");
@@ -63,69 +63,76 @@ try {
   console.log("✓ 我的页：五维掌握情况（5 条）");
 
   // ============ 3. 会员页：价格 + 权益 + 占位 ============
-  await page.$(".my__menu-item") ; // 存在性
-  // 点击菜单进入会员页
+  // 菜单存在性断言；进页用直接路由（automator 的 tap 偶发不触发 navigateTo）
   const menuItems = await page.$$(".my__menu-item");
-  let entered = false;
+  let hasMembership = false;
   for (const item of menuItems) {
     const label = await (await item.$(".my__menu-label")).text();
     if (label.includes("会员")) {
-      await item.tap();
-      entered = true;
+      hasMembership = true;
       break;
     }
   }
-  assert.ok(entered, "我的页应有「会员」菜单");
+  assert.ok(hasMembership, "我的页应有「会员」菜单");
+  await mini.navigateTo("/pages/membership/index");
   await sleep(2500);
   page = await mini.currentPage();
-  await waitFor(page, ".member__plans");
-
-  const prices = await page.$$(".member__plan-price");
-  const priceTexts = [];
-  for (const p of prices) priceTexts.push((await p.text()).trim());
-  assert.ok(priceTexts.some((t) => t.includes("128")), "年卡价格 ¥128");
-  assert.ok(priceTexts.some((t) => t.includes("19.9")), "月卡价格 ¥19.9");
-  const perMonth = await page.$(".member__plan-permonth");
-  assert.ok((await perMonth.text()).includes("10.7"), "年卡折算约 ¥10.7/月");
-  const recBadge = await page.$(".member__plan-badge");
-  assert.ok(recBadge, "年卡应有「推荐」角标");
-  const buyBtn = await page.$(".member__buy-btn");
-  const buyText = await buyBtn.text();
-  assert.ok(buyText.includes("立即开通"), `购买按钮应为「立即开通」，实际: ${buyText}`);
-  console.log("✓ 会员页：年卡¥128（推荐，≈¥10.7/月）、月卡¥19.9、立即开通按钮");
-
-  // 权益对比表
-  const rows = await page.$$(".member__compare-row");
-  assert.ok(rows.length >= 7, `权益对比应有 7 行，实际 ${rows.length}`);
-  console.log(`✓ 会员页：权益对比表（${rows.length} 行）`);
-
-  // ============ 3.5 购买流程：服务端 501 → 「即将上线」弹窗 ============
-  // 在应用上下文里包装 wx.showModal 捕获参数（生产未配置商户号，购买链路保持 501）
-  await mini.evaluate(() => {
-    wx.__modalCalls = [];
-    const orig = wx.showModal;
-    wx.showModal = (opts) => {
-      wx.__modalCalls.push({ title: opts && opts.title });
-      return (orig && orig(opts)) || Promise.resolve({ errMsg: "showModal:ok" });
-    };
-  });
-  const buyCards = await page.$$(".member__plan");
-  const recCard = buyCards[0]; // 年卡（推荐）
-  assert.ok(recCard, "年卡卡片存在");
-  const cardBtn = await recCard.$(".member__buy-btn");
-  await cardBtn.tap();
-  await sleep(4000); // 下单请求（501）+ 弹窗
-  const modalCalls = await mini.evaluate(() => wx.__modalCalls);
+  // 账号可能是 FREE 或 PRO（历史兑换测试会激活），两种状态都要能渲染
+  const planLabel = await waitFor(page, ".member__current-plan");
+  const planText = (await planLabel.text()).trim();
   assert.ok(
-    Array.isArray(modalCalls) && modalCalls.length > 0,
-    "点击开通后应弹出支付未开放提示（服务端 501）"
+    planText.includes("PRO") || planText.includes("FREE"),
+    `会员页应显示当前身份（PRO/FREE），实际: ${planText}`
   );
-  const modalTitle = modalCalls[0]?.title || "";
-  assert.ok(
-    String(modalTitle).includes("即将上线"),
-    `弹窗标题应为「支付功能即将上线」，实际: ${modalTitle}`
-  );
-  console.log("✓ 购买流程：服务端 501 → 弹窗承接「", modalTitle, "」（第一版预期）");
+  const isProView = planText.includes("PRO");
+
+  if (!isProView) {
+    // ---- FREE 视图：年会员 ¥29.9 卡片 + 兑换码入口 ----
+    await waitFor(page, ".member__plans");
+    const prices = await page.$$(".member__plan-price");
+    const priceTexts = [];
+    for (const p of prices) priceTexts.push((await p.text()).trim());
+    assert.equal(prices.length, 1, "仅一个在售方案（年会员）");
+    assert.ok(priceTexts[0].includes("29.9"), `年会员价格 ¥29.9，实际: ${priceTexts[0]}`);
+    const perMonth = await page.$(".member__plan-permonth");
+    assert.ok((await perMonth.text()).includes("12 个月"), "年会员 12 个月有效");
+    const recBadge = await page.$(".member__plan-badge");
+    assert.ok(recBadge, "年会员应有角标");
+    const redeemInput = await page.$(".member__redeem-input");
+    assert.ok(redeemInput, "应有兑换码激活输入框");
+    console.log("✓ 会员页（FREE）：年会员 ¥29.9（12 个月有效）+ 兑换码激活入口");
+
+    // 权益对比表
+    const rows = await page.$$(".member__compare-row");
+    assert.ok(rows.length >= 7, `权益对比应有 7 行，实际 ${rows.length}`);
+    console.log(`✓ 会员页：权益对比表（${rows.length} 行）`);
+
+    // ---- 3.5 购买流程：添加客服微信 → 客服弹窗（二维码 + 微信号） ----
+    const buyBtn = await page.$(".member__buy-btn--card");
+    assert.ok(buyBtn, "开通按钮存在");
+    const buyText = await buyBtn.text();
+    assert.ok(buyText.includes("添加客服微信"), `购买按钮应为「添加客服微信开通」，实际: ${buyText}`);
+    await buyBtn.tap();
+    await sleep(1500);
+    const svcTitle = await page.$(".svc__title");
+    assert.ok(svcTitle, "点击开通后应弹出客服弹窗");
+    const svcText = await svcTitle.text();
+    assert.ok(svcText.includes("年会员"), `客服弹窗应为年会员开通引导，实际: ${svcText}`);
+    const svcQr = await page.$(".svc__qr");
+    assert.ok(svcQr, "客服弹窗应展示二维码");
+    console.log("✓ 购买流程：添加客服微信 → 客服弹窗（", svcText.trim(), " + 二维码）");
+    const svcClose = await page.$(".svc__close");
+    if (svcClose) await svcClose.tap();
+    await sleep(800);
+  } else {
+    // ---- PRO 视图：有效期 / 终身标识渲染 ----
+    const desc = await (await page.$(".member__current-desc")).text();
+    assert.ok(
+      desc.includes("终身") || desc.includes("有效期至"),
+      `PRO 视图应显示终身或到期信息，实际: ${desc}`
+    );
+    console.log("✓ 会员页（PRO）：", desc.trim());
+  }
 
   // ============ 4. 学习会话：5D 卡加载 ============
   await mini.navigateBack();

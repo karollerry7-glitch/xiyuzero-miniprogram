@@ -254,9 +254,9 @@ export default function OrbitPage() {
       {/* ---- 品牌署名（页面内容底部，不遮挡按钮） ---- */}
       <View className="orbit__brand">
         <View className="orbit__brand-line">
-          <Text className="orbit__brand-main">沃天岚</Text>
+          <Text className="orbit__brand-main">沃天澜</Text>
           <Text className="orbit__brand-dot">·</Text>
-          <Text className="orbit__brand-sub">西语ZERO</Text>
+          <Text className="orbit__brand-sub">西语</Text>
         </View>
         <Text className="orbit__brand-tag">每天认识一点新的世界</Text>
       </View>

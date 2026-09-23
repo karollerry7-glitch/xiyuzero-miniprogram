@@ -2,7 +2,7 @@
   "miniprogramRoot": "dist/",
   "srcMiniprogramRoot": "src/",
   "projectname": "xiyuzero-miniprogram",
-  "description": "西语Zero — 西班牙语 0→B2 主动词汇学习",
+  "description": "沃天澜 · 西语 — 西班牙语 0→B2 主动词汇学习",
   "appid": "wxccbb540a3394ce9d",
   "compileType": "miniprogram",
   "libVersion": "3.8.10",

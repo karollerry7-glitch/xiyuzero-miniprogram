@@ -1,3 +1,3 @@
 export default definePageConfig({
-  navigationBarTitleText: "西语Zero Pro",
+  navigationBarTitleText: "沃天澜 Pro",
 });
