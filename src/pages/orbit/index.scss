@@ -83,6 +83,72 @@ page {
     margin-top: 8rpx;
   }
 
+  /* ---- 用户专属问候 ---- */
+  &__greet {
+    margin-top: 28rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20rpx;
+  }
+
+  &__greet-avatar {
+    width: 68rpx;
+    height: 68rpx;
+    border-radius: 50%;
+    border: 2rpx solid rgba(242, 196, 109, 0.55); /* 极细暖金描边 */
+    box-sizing: border-box;
+    flex-shrink: 0;
+
+    &--mono {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(242, 196, 109, 0.12);
+
+      text {
+        font-size: 30rpx;
+        font-weight: 600;
+        color: $gold;
+        line-height: 1;
+      }
+    }
+  }
+
+  &__greet-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  &__greet-line {
+    display: flex;
+    align-items: baseline;
+    max-width: 480rpx;
+  }
+
+  &__greet-hi {
+    font-size: 24rpx;
+    color: rgba(255, 249, 239, 0.55);
+    flex-shrink: 0;
+  }
+
+  &__greet-name {
+    font-size: 30rpx;
+    font-weight: 500;
+    color: $ivory;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__greet-sub {
+    margin-top: 4rpx;
+    font-size: 20rpx;
+    letter-spacing: 2rpx;
+    color: rgba(255, 249, 239, 0.45);
+  }
+
   /* ---- 文案 ---- */
   &__phrase {
     display: flex;
@@ -214,5 +280,45 @@ page {
     color: rgba(242, 196, 109, 0.75);
     padding: 12rpx 48rpx;
     letter-spacing: 2rpx;
+  }
+
+  /* ---- 品牌署名：沃天岚 · 西语ZERO ---- */
+  &__brand {
+    margin-top: 44rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__brand-line {
+    display: flex;
+    align-items: baseline;
+    gap: 12rpx;
+  }
+
+  &__brand-main {
+    font-size: 34rpx;
+    font-weight: 600;
+    letter-spacing: 3rpx;
+    color: $ivory;
+  }
+
+  &__brand-dot {
+    font-size: 24rpx;
+    color: rgba(242, 196, 109, 0.6);
+  }
+
+  /* 副标识：比主品牌小约 30%、降透明度 */
+  &__brand-sub {
+    font-size: 24rpx;
+    letter-spacing: 1rpx;
+    color: rgba(255, 249, 239, 0.5);
+  }
+
+  &__brand-tag {
+    font-size: 18rpx;
+    letter-spacing: 6rpx;
+    color: rgba(255, 249, 239, 0.35);
   }
 }

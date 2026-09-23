@@ -28,12 +28,20 @@ export interface PosterData {
   count: number; // 今日总词数
   streak: number;
   week: number;
+  /** 用户昵称（null = 未设置 → 海报署名「一位西语学习者」） */
+  nickname: string | null;
 }
 
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
-function drawPoster(ctx: CanvasRenderingContext2D, d: PosterData): void {
+function drawPoster(
+  ctx: CanvasRenderingContext2D,
+  d: PosterData,
+  anonymous = false
+): void {
   const total = d.words.length || d.count;
+  // 署名：默认昵称；匿名或未设置 → 一位西语学习者（不含头像/其他账户信息）
+  const signer = anonymous || !d.nickname ? "一位西语学习者" : d.nickname;
 
   // ---- 夜空底色 ----
   ctx.fillStyle = NIGHT;
@@ -79,6 +87,11 @@ function drawPoster(ctx: CanvasRenderingContext2D, d: PosterData): void {
   ctx.fillStyle = "rgba(255,249,239,0.55)";
   ctx.font = "26px sans-serif";
   ctx.fillText(dateStr, cx, 120);
+
+  // ---- 专属署名（昵称，仅昵称不带头像） ----
+  ctx.fillStyle = "rgba(255,249,239,0.45)";
+  ctx.font = "22px sans-serif";
+  ctx.fillText(`${signer} 的今日词轨`, cx, 156);
 
   // ---- 五层轨道 ----
   const R = 245;
@@ -152,13 +165,33 @@ function drawPoster(ctx: CanvasRenderingContext2D, d: PosterData): void {
   ctx.font = "20px sans-serif";
   ctx.fillText(q.zh, cx, 1026);
 
-  // ---- 品牌 ----
-  ctx.fillStyle = GOLD;
-  ctx.font = "600 27px sans-serif";
-  ctx.fillText("西语ZERO", cx, 1118);
+  // ---- 品牌（组合署名，同一基线：沃天岚 · 西语ZERO） ----
+  const brandMain = "沃天岚";
+  const brandSep = " · ";
+  const brandSub = "西语ZERO";
+  const brandY = 1118;
+  ctx.font = "600 34px sans-serif";
+  const wMain = ctx.measureText(brandMain).width;
+  ctx.font = "24px sans-serif";
+  const wSep = ctx.measureText(brandSep).width;
+  const wSub = ctx.measureText(brandSub).width;
+  let bx = cx - (wMain + wSep + wSub) / 2;
+  ctx.textAlign = "left";
+  ctx.fillStyle = IVORY;
+  ctx.font = "600 34px sans-serif";
+  ctx.fillText(brandMain, bx, brandY);
+  bx += wMain;
+  ctx.fillStyle = "rgba(242,196,109,0.6)";
+  ctx.font = "24px sans-serif";
+  ctx.fillText(brandSep, bx, brandY);
+  bx += wSep;
+  ctx.fillStyle = "rgba(255,249,239,0.5)";
+  ctx.font = "24px sans-serif";
+  ctx.fillText(brandSub, bx, brandY);
+  ctx.textAlign = "center";
   ctx.fillStyle = "rgba(255,249,239,0.4)";
   ctx.font = "18px sans-serif";
-  ctx.fillText("5 D 词 汇 星 轨", cx, 1150);
+  ctx.fillText("每 天 认 识 一 点 新 的 世 界", cx, 1152);
 }
 
 export function OrbitPoster({
@@ -170,25 +203,33 @@ export function OrbitPoster({
 }) {
   const [saving, setSaving] = useState(false);
   const [ready, setReady] = useState(false);
+  const [anonymous, setAnonymous] = useState(false);
+
+  /** （重）绘制海报 — 绘制完成后置 ready；匿名切换时也重绘 */
+  const render = () => {
+    const q = Taro.createSelectorQuery();
+    q.select("#orbitPoster").fields({ node: true });
+    q.exec((res) => {
+      const node = (res?.[0] as { node?: any })?.node;
+      if (!node) return;
+      node.width = W;
+      node.height = H;
+      drawPoster(
+        node.getContext("2d") as CanvasRenderingContext2D,
+        data,
+        anonymous
+      );
+      setReady(true);
+    });
+  };
 
   // 挂载后等一帧再取 canvas 节点并绘制
   useEffect(() => {
     setReady(false);
-    const timer = setTimeout(() => {
-      const q = Taro.createSelectorQuery();
-      q.select("#orbitPoster").fields({ node: true });
-      q.exec((res) => {
-        const node = (res?.[0] as { node?: any })?.node;
-        if (!node) return;
-        node.width = W;
-        node.height = H;
-        drawPoster(node.getContext("2d") as CanvasRenderingContext2D, data);
-        setReady(true);
-      });
-    }, 150);
+    const timer = setTimeout(render, 150);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [anonymous]);
 
   /** 导出临时文件路径（预览/保存共用） */
   const exportFile = (cb: (path: string) => void) => {
@@ -255,6 +296,15 @@ export function OrbitPoster({
         <Text className="poster__title">今日词轨</Text>
         <Canvas type="2d" id="orbitPoster" className="poster__canvas" />
         {!ready && <Text className="poster__loading">正在绘制星轨…</Text>}
+        <View
+          className="poster__anon"
+          onClick={() => setAnonymous((v) => !v)}
+        >
+          <Text className="poster__anon-check">
+            {anonymous ? "☑" : "☐"}
+          </Text>
+          <Text className="poster__anon-label">匿名分享（署名「一位西语学习者」）</Text>
+        </View>
         <View className="poster__actions">
           <Button className="poster__btn" onClick={save}>
             {saving ? "保存中…" : "保存到相册"}

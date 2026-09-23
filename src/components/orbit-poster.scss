@@ -49,6 +49,25 @@ $ivory: #fff9ef;
     color: rgba(255, 249, 239, 0.5);
   }
 
+  &__anon {
+    margin-top: 20rpx;
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+    padding: 8rpx 24rpx;
+  }
+
+  &__anon-check {
+    font-size: 28rpx;
+    color: $gold;
+    line-height: 1;
+  }
+
+  &__anon-label {
+    font-size: 22rpx;
+    color: rgba(255, 249, 239, 0.55);
+  }
+
   &__actions {
     margin-top: 32rpx;
     width: 560rpx;

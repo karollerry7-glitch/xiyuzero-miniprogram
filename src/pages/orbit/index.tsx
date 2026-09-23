@@ -3,16 +3,18 @@
 // 连续天数/本周累计由 activity 派生，天然幂等（刷新/重复进入不会重复计数）。
 import { useEffect, useMemo, useState } from "react";
 import Taro from "@tarojs/taro";
-import { View, Text, Button } from "@tarojs/components";
+import { View, Text, Button, Image } from "@tarojs/components";
 import { StarOrbit } from "../../components/star-orbit";
 import { OrbitPoster, PosterData } from "../../components/orbit-poster";
 import { quoteForDate } from "../../shared/quotes";
 import { weekNewLearned } from "../../shared/orbit";
 import { speak, preload } from "../../services/tts";
+import { DEFAULT_NICKNAME } from "../../config/membership";
 import {
   getActivity,
   getLastOrbit,
   getTodayActivity,
+  getUser,
   markCheckinToday,
   streakDaysLocal,
   type OrbitWord,
@@ -100,6 +102,20 @@ export default function OrbitPage() {
 
   const quote = useMemo(() => quoteForDate(), []);
 
+  // ---- 用户昵称/头像（本地缓存读取，绝不触发授权弹窗） ----
+  // 数据来源：登录时缓存于 storage 的 ServerUser（wx.login 静默 + 登录页昵称步）。
+  // 未登录 / 未设置昵称（默认「西语学员」）→ 兜底「学习者」；海报侧兜底匿名署名。
+  const { displayName, avatarUrl, posterNickname } = useMemo(() => {
+    const u = getUser();
+    const nick = (u?.nickname || "").trim();
+    const real = !!nick && nick !== DEFAULT_NICKNAME;
+    return {
+      displayName: real ? nick : "学习者",
+      avatarUrl: u?.avatar || null,
+      posterNickname: real ? nick : null,
+    };
+  }, []);
+
   const dateText = useMemo(() => {
     const d = new Date();
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(
@@ -121,6 +137,7 @@ export default function OrbitPage() {
     count: total,
     streak: stats.streak,
     week: stats.week,
+    nickname: posterNickname,
   };
 
   return (
@@ -139,6 +156,28 @@ export default function OrbitPage() {
           onClick={goHome}
         >
           <Text>✕</Text>
+        </View>
+      </View>
+
+      {/* ---- 用户专属问候（头像 + Hi 昵称，介于标题与星轨之间） ---- */}
+      <View className="orbit__greet">
+        {avatarUrl ? (
+          <Image
+            className="orbit__greet-avatar"
+            src={avatarUrl}
+            mode="aspectFill"
+          />
+        ) : (
+          <View className="orbit__greet-avatar orbit__greet-avatar--mono">
+            <Text>沃</Text>
+          </View>
+        )}
+        <View className="orbit__greet-col">
+          <View className="orbit__greet-line">
+            <Text className="orbit__greet-hi">Hi，</Text>
+            <Text className="orbit__greet-name">{displayName}</Text>
+          </View>
+          <Text className="orbit__greet-sub">你的今日词轨已经点亮</Text>
         </View>
       </View>
 
@@ -195,6 +234,16 @@ export default function OrbitPage() {
         <Text className="orbit__home" onClick={goHome}>
           回到首页
         </Text>
+      </View>
+
+      {/* ---- 品牌署名（沃天岚 · 西语ZERO） ---- */}
+      <View className="orbit__brand">
+        <View className="orbit__brand-line">
+          <Text className="orbit__brand-main">沃天岚</Text>
+          <Text className="orbit__brand-dot">·</Text>
+          <Text className="orbit__brand-sub">西语ZERO</Text>
+        </View>
+        <Text className="orbit__brand-tag">每天认识一点新的世界</Text>
       </View>
 
       {/* ---- 海报 ---- */}
