@@ -14,7 +14,7 @@ import {
   Plan,
   PRO_ENTITLEMENTS,
 } from "../config/membership";
-import { getMembershipCache, setMembershipCache } from "../utils/storage";
+import { getMembershipCache, getToken, setMembershipCache } from "../utils/storage";
 
 export interface MembershipUsage {
   date: string; // 服务端 UTC 日期（YYYY-MM-DD）
@@ -72,8 +72,11 @@ export function getCachedMembership(): MembershipView {
   return { ...cached, isPro, entitlements: entitlementsOf(isPro) };
 }
 
-/** 拉取服务端会员视图并缓存（登录后 / 进入学习会话前调用） */
+/** 拉取服务端会员视图并缓存（登录后 / 进入学习会话前调用）。
+ * 合规整改：游客（无 token）不发请求 —— 直接返回本地 Free 视图，
+ * 避免无凭证请求 401 后触发自动重登、在用户不知情时建立账号。 */
 export async function fetchMembership(): Promise<MembershipView> {
+  if (!getToken()) return getCachedMembership();
   const server = await request<{
     plan: Plan;
     billingCycle: BillingCycle | null;

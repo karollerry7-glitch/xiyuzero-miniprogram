@@ -155,3 +155,36 @@
     color: rgba(242, 196, 109, 0.75);
   }
 }
+
+// 协议勾选框（审核整改：初始未勾选，主动点击才勾选）
+.login__legal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 0 32rpx;
+}
+
+.login__check {
+  flex-shrink: 0;
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 12rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(255, 249, 239, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &--on {
+    background: rgba(242, 196, 109, 0.9);
+    border-color: rgba(242, 196, 109, 0.9);
+  }
+}
+
+.login__check-mark {
+  font-size: 22rpx;
+  color: #0b1736;
+  font-weight: 700;
+  line-height: 1;
+}

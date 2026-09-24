@@ -134,3 +134,36 @@
   font-weight: 600;
   padding: 8rpx 24rpx;
 }
+
+// 游客登录入口卡（审核整改：用户主动点击才进入登录页）
+.card--guest {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  margin-top: 24rpx;
+  background: #ffffff;
+}
+
+.card__guest-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card__guest-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: rgba(24, 34, 48, 0.9);
+}
+
+.card__guest-desc {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: rgba(24, 34, 48, 0.5);
+}
+
+.card__guest-arrow {
+  font-size: 40rpx;
+  color: rgba(24, 34, 48, 0.3);
+  line-height: 1;
+}

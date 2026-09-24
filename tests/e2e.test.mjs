@@ -26,9 +26,42 @@ const mini = await automator.connect({ wsEndpoint: `ws://127.0.0.1:${PORT}` });
 console.log("✓ 已连接小程序自动化端口", PORT);
 
 try {
+  // ============ 0. 主动登录前置（审核整改后登录由用户触发） ============
+  // 走完整 UI 流程：勾选协议 → 微信一键登录 → （昵称步骤）→ 回首页
+  // 同时覆盖审核场景 6：用户主动登录时按实际需要进行身份验证
+  let page = await mini.reLaunch("/pages/login/index");
+  await sleep(2000);
+  const chk = await waitFor(page, ".login__check");
+  await chk.tap(); // 用户主动勾选协议
+  await sleep(600);
+  const chkClass = await (await page.$(".login__check")).attribute("class");
+  assert.ok(String(chkClass).includes("--on"), "勾选协议失败");
+  const loginBtn = await waitFor(page, ".login__btn");
+  await loginBtn.tap(); // 用户主动点击登录
+  await sleep(4500); // wx.login + code2Session + profile
+  // 新用户进入昵称步骤 → 填写并保存；老用户直接完成
+  const cur0 = await mini.currentPage();
+  if (cur0.path === "pages/login/index") {
+    const nickInput = await page.$(".login__input");
+    if (nickInput) {
+      await nickInput.input("E2E学员");
+      await sleep(600);
+      const saveBtn = await page.$(".login__btn");
+      await saveBtn.tap();
+      await sleep(3500);
+    }
+  }
+  const afterLogin = await mini.currentPage();
+  assert.equal(
+    afterLogin.path,
+    "pages/learn/index",
+    `主动登录完成后应回到首页，实际: ${afterLogin.path}`
+  );
+  console.log("✓ 主动登录流程：勾选协议 → 一键登录 → （昵称）→ 回到首页");
+
   // ============ 1. 首页（学习 tab）============
-  let page = await mini.reLaunch("/pages/learn/index");
-  await sleep(3000);
+  page = await mini.currentPage();
+  await sleep(1500);
   await waitFor(page, ".card--hero");
   const goalText = await (await page.$(".card__denom")).text();
   // Free 用户每日目标 = min(10, 用户偏好)（当前 Free 每日 10 新词）

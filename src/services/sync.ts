@@ -8,6 +8,7 @@
 //
 // 触发时机：app 启动/登录后、学习会话完成后、复习会话完成后。
 
+import Taro from "@tarojs/taro";
 import type { DayActivity, ReviewState } from "../shared/types";
 import { request } from "./request";
 import {
@@ -32,7 +33,12 @@ interface ProgressPayload {
   prefs?: unknown;
 }
 
-export type SyncResult = "ok" | "adopted" | "skipped" | "offline";
+export type SyncResult = "ok" | "adopted" | "skipped" | "offline" | "deferred";
+
+/** 游客转登录的合并选择标记（one-shot）：登录时用户选「暂不合并」则置位，
+ * 下一次 dirty 同步跳过一次（不 POST 不覆盖云端，本地数据保留）。
+ * 用户之后在账号下继续学习，同步恢复正常 —— 兼顾选择权与数据不丢。 */
+const KEY_MERGE_DEFERRED = "xz_merge_deferred";
 
 function localState(): ProgressPayload {
   return {
@@ -80,6 +86,16 @@ export async function syncNow(): Promise<SyncResult> {
       // 本地干净：检查服务端是否有更新的状态（换设备）
       const adopted = await pullIfNewer();
       return adopted ? "adopted" : "ok";
+    }
+
+    // 游客转登录时用户选择「暂不合并」→ 本次跳过（one-shot，本地数据保留）
+    try {
+      if (Taro.getStorageSync(KEY_MERGE_DEFERRED)) {
+        Taro.removeStorageSync(KEY_MERGE_DEFERRED);
+        return "deferred";
+      }
+    } catch {
+      /* ignore */
     }
 
     const res = await request<{ ok: boolean; accepted: boolean; serverUpdatedAt: number }>(

@@ -5,7 +5,7 @@
 // openid 永远不是业务 user_id。
 
 import Taro from "@tarojs/taro";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { ServerUser } from "../shared/types";
 import { request } from "./request";
 import {
@@ -67,7 +67,9 @@ export async function updateNickname(
   return res.user;
 }
 
-/** 页面级登录 Hook：挂载时静默登录，暴露用户/加载/错误/重试 */
+/** 页面级登录 Hook：只读本地缓存，不发起登录。
+ * 合规整改：登录必须由用户主动点击触发（游客优先）。
+ * error/login 保留给需要显式重试的场景（如「我的」页登录失败重试）。 */
 export function useAuth() {
   const [user, setUserState] = useState<ServerUser | null>(() => getUser());
   const [loading, setLoading] = useState(false);
@@ -89,11 +91,6 @@ export function useAuth() {
   /** 轻量刷新：从登录页返回等场景同步本地缓存（不闪 loading、不发请求） */
   const refresh = useCallback(() => {
     setUserState(getUser());
-  }, []);
-
-  useEffect(() => {
-    if (!user) login();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { user, loading, error, login, refresh };

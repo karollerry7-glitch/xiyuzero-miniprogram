@@ -4,10 +4,39 @@ import { useState } from "react";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { View, Text, Input } from "@tarojs/components";
 import { ensureLogin, updateNickname } from "../../services/auth";
+import { syncNow } from "../../services/sync";
+import { getLastMutation, getLastSynced, getPendingEvents } from "../../utils/storage";
 import { DEFAULT_NICKNAME } from "../../config/membership";
 import "./index.scss";
 
 const KEY_LOGIN_SKIPPED = "xz_login_skipped";
+// 协议同意记录：版本 + 时间（合规：主动勾选才记录，不勾选不得视为同意）
+const KEY_LEGAL_CONSENT = "xz_legal_consent";
+const LEGAL_VERSION = "1.0";
+
+/** 读取协议同意记录（版本 + 同意时间） */
+export function getLegalConsent(): { version: string; agreedAt: number } | null {
+  try {
+    const raw = Taro.getStorageSync(KEY_LEGAL_CONSENT);
+    if (!raw) return null;
+    const rec = JSON.parse(raw);
+    if (rec && rec.version && rec.agreedAt) return rec;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function recordLegalConsent(): void {
+  try {
+    Taro.setStorageSync(
+      KEY_LEGAL_CONSENT,
+      JSON.stringify({ version: LEGAL_VERSION, agreedAt: Date.now() })
+    );
+  } catch {
+    /* ignore */
+  }
+}
 
 export default function LoginPage() {
   // step: login 一键登录 / nickname 昵称填写
@@ -16,6 +45,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [nick, setNick] = useState("");
+  // 协议勾选：初始必须为未勾选（false），不得默认同意
+  const [agreed, setAgreed] = useState(false);
 
   // 已登录用户进入本页：
   //   - 昵称仍是默认（西语学员）→ 停留并进入昵称步骤（my 页「改昵称」入口）
@@ -50,10 +81,47 @@ export default function LoginPage() {
 
   const onLogin = async () => {
     if (loading || done) return;
+    // 合规：未勾选协议时拦截登录，不修改勾选状态、不得视为同意
+    if (!agreed) {
+      Taro.showToast({
+        title: "请先阅读并勾选同意《用户协议》与《隐私政策》",
+        icon: "none",
+        duration: 2500,
+      });
+      return;
+    }
     setLoading(true);
     setError(null);
+    // 游客转登录：登录前快照本地是否有未同步学习记录（登录后提供明确合并选择）
+    const hadLocalProgress =
+      getPendingEvents().length > 0 || getLastMutation() > getLastSynced();
     try {
       const user = await ensureLogin();
+      // 用户主动勾选并完成登录 → 记录同意版本与时间
+      recordLegalConsent();
+      // 游客期间有本地学习记录 → 提供明确合并选择，不自动覆盖
+      if (hadLocalProgress) {
+        Taro.showModal({
+          title: "发现本机学习记录",
+          content:
+            "检测到你在未登录期间的学习记录。是否合并到云端账号？（合并保留两端较新的进度，可在多设备同步）",
+          confirmText: "合并到账号",
+          cancelText: "暂不合并",
+          success: (res) => {
+            if (res.confirm) {
+              syncNow().catch(() => {
+                /* 离线时下次自动重试 */
+              });
+            } else {
+              try {
+                Taro.setStorageSync("xz_merge_deferred", "1");
+              } catch {
+                /* ignore */
+              }
+            }
+          },
+        });
+      }
       if (user.nickname && user.nickname !== DEFAULT_NICKNAME) {
         // 老用户已设置昵称 → 直接完成
         setDone(true);
@@ -205,10 +273,16 @@ export default function LoginPage() {
         </Text>
       </View>
 
-      {/* 协议 */}
+      {/* 协议：主动勾选（初始未勾选），两份协议可分别打开阅读 */}
       <View className="login__legal">
+        <View
+          className={`login__check ${agreed ? "login__check--on" : ""}`}
+          onClick={() => setAgreed(!agreed)}
+        >
+          <Text className="login__check-mark">{agreed ? "✓" : ""}</Text>
+        </View>
         <Text className="login__legal-text">
-          登录即代表同意{" "}
+          已阅读并同意{" "}
           <Text
             className="login__legal-link"
             onClick={() => openLegal("terms")}
