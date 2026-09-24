@@ -14,12 +14,8 @@ export const FREE_LEVELS: readonly string[] = ["Starter", "A1"];
 /** Free 等级词量（展示用，约数 = Starter 25 + A1 459） */
 export const FREE_LEVEL_WORD_COUNT = 484;
 
-/** Pro 年费（元）—— 当前唯一在售方案 */
+/** Pro 年费（元）—— 单一在售方案（仅做 Pro 年费 ¥29.9 版本） */
 export const PRO_YEARLY_PRICE = 29.9;
-
-/** Pro 历史价格（元）—— 保留备查，不再展示售卖 */
-export const PRO_MONTHLY_PRICE = 19.9;
-export const PRO_LIFETIME_PRICE = 99.9;
 
 /** 默认昵称（与服务端 lib/profile.ts DEFAULT_NICKNAME 保持一致） */
 export const DEFAULT_NICKNAME = "西语学员";
