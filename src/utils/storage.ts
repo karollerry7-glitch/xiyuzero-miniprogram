@@ -13,6 +13,7 @@ const KEY_PENDING_EVENTS = "xz_pending_events";
 const MAX_PENDING_EVENTS = 200;
 
 import { DayActivity, ReviewState, ServerUser } from "../shared/types";
+import { dayKey } from "../shared/datekey";
 
 export function getToken(): string | null {
   try {
@@ -126,8 +127,9 @@ export function clearPendingEvents(): void {
 
 const KEY_ACTIVITY = "xz_activity";
 
+// 日期规则：东八区自然日（见 shared/datekey.ts），服务端 usage 同规则
 function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  return dayKey();
 }
 
 function emptyDay(): DayActivity {
@@ -183,7 +185,7 @@ export function streakDaysLocal(): number {
   let streak = 0;
   const d = new Date();
   for (;;) {
-    const k = d.toISOString().slice(0, 10);
+    const k = dayKey(d);
     const a = activity[k];
     const did =
       a && (a.newLearned > 0 || a.reviewed > 0 || a.listening > 0 || a.output > 0);

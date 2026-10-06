@@ -10,6 +10,7 @@
 // ============================================================
 
 import type { DayActivity, ReviewState } from "./types";
+import { dayKey } from "./datekey";
 
 export interface DimensionStat {
   key: "meaning" | "sound" | "grammar" | "chunk" | "context";
@@ -93,7 +94,7 @@ export function recentTrend(
   for (let i = days - 1; i >= 0; i--) {
     const day = new Date(d);
     day.setDate(d.getDate() - i);
-    const k = day.toISOString().slice(0, 10);
+    const k = dayKey(day);
     const a = activity[k];
     out.push({
       date: k.slice(5), // MM-DD
@@ -157,14 +158,14 @@ export function streakFromActivity(
   let streak = 0;
   const d = new Date(now);
   for (;;) {
-    const k = d.toISOString().slice(0, 10);
+    const k = dayKey(d);
     const a = activity[k];
     const did =
       a && (a.newLearned > 0 || a.reviewed > 0 || a.listening > 0 || a.output > 0);
     if (did) {
       streak++;
       d.setDate(d.getDate() - 1);
-    } else if (k === now.toISOString().slice(0, 10)) {
+    } else if (k === dayKey(now)) {
       // 今天还没学不算断签
       d.setDate(d.getDate() - 1);
     } else {

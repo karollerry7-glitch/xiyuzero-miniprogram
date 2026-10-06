@@ -26,6 +26,12 @@ const mini = await automator.connect({ wsEndpoint: `ws://127.0.0.1:${PORT}` });
 console.log("✓ 已连接小程序自动化端口", PORT);
 
 try {
+  // ============ 防污染护栏：清空本地存储 ============
+  // 保证每次冒烟从确定性的新用户态开始；更重要的是防止开发者工具里
+  // 遗留的脏进度（pending/lastMutation）在测试中被推送到真实云端账号，
+  // 覆盖手机端的学习记录（sync 采纳为逐词合并后已不致丢数据，这里双保险）。
+  await mini.callWxMethod("clearStorageSync");
+  console.log("✓ 已清空本地存储（防测试数据污染云端账号）");
   // ============ 0. 主动登录前置（审核整改后登录由用户触发） ============
   // 走完整 UI 流程：勾选协议 → 微信一键登录 → （昵称步骤）→ 回首页
   // 同时覆盖审核场景 6：用户主动登录时按实际需要进行身份验证
@@ -192,5 +198,14 @@ try {
 
   console.log("\n========== E2E 冒烟全部通过 ==========");
 } finally {
+  // 防污染护栏：退出登录态并清空存储，避免开发者工具遗留 token/脏进度
+  // 在后续手工运行时被静默同步到真实云端账号
+  try {
+    await mini.callWxMethod("removeStorageSync", "xz_token");
+    await mini.callWxMethod("removeStorageSync", "xz_token_exp");
+    await mini.callWxMethod("removeStorageSync", "xz_pending_events");
+  } catch {
+    /* ignore */
+  }
   await mini.disconnect();
 }

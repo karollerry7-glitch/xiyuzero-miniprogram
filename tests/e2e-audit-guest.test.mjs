@@ -125,5 +125,13 @@ try {
 
   console.log("\n========== 审核整改 E2E（游客模式+协议勾选）全部通过 ==========");
 } finally {
+  // 防污染护栏：清空测试期间可能产生的登录态与脏进度
+  try {
+    await mini.callWxMethod("removeStorageSync", "xz_token");
+    await mini.callWxMethod("removeStorageSync", "xz_token_exp");
+    await mini.callWxMethod("removeStorageSync", "xz_pending_events");
+  } catch {
+    /* ignore */
+  }
   await mini.disconnect();
 }

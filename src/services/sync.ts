@@ -49,6 +49,58 @@ function localState(): ProgressPayload {
   };
 }
 
+/** 逐词合并：两份 SRS 状态取评分时间（lastRatedAt）较新的一份；单侧独有的直接保留。
+ *  防护目标：云端出现过期/被污染的状态（如测试数据覆盖）时，
+ *  不再整表覆盖清空本地 —— 本地学过的词永不因同步而丢失。 */
+function mergeReviews(
+  local: Record<string, ReviewState>,
+  server: Record<string, ReviewState>
+): Record<string, ReviewState> {
+  const out: Record<string, ReviewState> = { ...server };
+  for (const [id, r] of Object.entries(local)) {
+    const s = out[id];
+    if (!s) {
+      out[id] = r;
+      continue;
+    }
+    const lt = r.lastRatedAt ? Date.parse(r.lastRatedAt) : 0;
+    const st = s.lastRatedAt ? Date.parse(s.lastRatedAt) : 0;
+    if (lt > st) out[id] = r;
+  }
+  return out;
+}
+
+/** 逐日合并活动记账：同一天各计数取较大值、错词 id 取并集（幂等，不会丢当日记录） */
+function mergeActivity(
+  local: Record<string, DayActivity>,
+  server: Record<string, DayActivity>
+): Record<string, DayActivity> {
+  const out: Record<string, DayActivity> = { ...server };
+  for (const [k, a] of Object.entries(local)) {
+    const s = out[k];
+    if (!s) {
+      out[k] = a;
+      continue;
+    }
+    const merged: DayActivity = { ...s };
+    for (const key of Object.keys(a) as (keyof DayActivity)[]) {
+      if (key === "wrongIds") {
+        merged.wrongIds = Array.from(
+          new Set([...(s.wrongIds ?? []), ...(a.wrongIds ?? [])])
+        );
+      } else {
+        const av = a[key];
+        const sv = merged[key];
+        if (typeof av === "number" && typeof sv === "number") {
+          (merged as unknown as Record<string, unknown>)[key] = Math.max(sv, av);
+        }
+      }
+    }
+    out[k] = merged;
+  }
+  return out;
+}
+
 /** 拉取服务端状态；比本地新且本地干净时采纳，返回是否采纳 */
 async function pullIfNewer(force = false): Promise<boolean> {
   const server = await request<ProgressPayload>("/api/progress");
@@ -57,10 +109,14 @@ async function pullIfNewer(force = false): Promise<boolean> {
   if (!force && (hasPending || server.updatedAt <= localMutation)) {
     return false;
   }
-  // 采纳服务端状态（换设备恢复 / 多端同步）
+  // 采纳服务端状态（换设备恢复 / 多端同步）—— 逐词逐日合并，不整表覆盖
   if (server.updatedAt > 0) {
-    setReviewsCache(server.reviews ?? {});
-    setActivityAll(server.activity ?? {});
+    const local = {
+      reviews: getReviewsCache(),
+      activity: getActivity(),
+    };
+    setReviewsCache(mergeReviews(local.reviews, server.reviews ?? {}));
+    setActivityAll(mergeActivity(local.activity, server.activity ?? {}));
     if (server.prefs && typeof server.prefs === "object") {
       try {
         setPrefs(server.prefs as { startLevel?: string; dailyNew?: number });

@@ -74,7 +74,7 @@ export default function LearnPage() {
         </View>
         <View className="card__row card__row--sub">
           <Text className="card__pill">🔥 连续学习 {ov.streak} 天</Text>
-          <Text className="card__pill">已掌握 {ov.learnedTotal} 词</Text>
+          <Text className="card__pill">已学 {ov.learnedTotal} 词</Text>
         </View>
       </View>
 
