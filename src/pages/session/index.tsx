@@ -284,7 +284,7 @@ export default function SessionPage() {
             <Text className="quota-upgrade__title">
               升级 Pro · 每日不限新词
             </Text>
-            <Text className="quota-upgrade__sub">¥19.9 / 月 · 年卡折合每月约 ¥10.7</Text>
+            <Text className="quota-upgrade__sub">Pro 年卡 ¥29.9 / 年 · 每日不限新词</Text>
             <Text className="quota-upgrade__arrow">›</Text>
           </View>
           <View className="done__actions">

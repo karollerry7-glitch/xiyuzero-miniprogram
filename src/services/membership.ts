@@ -105,10 +105,13 @@ export async function fetchMembership(): Promise<MembershipView> {
 }
 
 // ============ 额度计算（纯函数，可测） ============
-// 日期规则：全链路统一 UTC（activity 记账 todayKey 与服务端一致）
+// 日期规则：全链路统一东八区自然日（与服务端 lib/datekey.ts、本地 activity 一致）
+// 背景：原先此处用 UTC 日期，凌晨 0-8 点服务端 usage.date 与客户端比对错位，
+// 导致 Free 额度判定在清晨窗口失效（服务端计数被忽略）。
+import { dayKey } from "../shared/datekey";
 
 function todayKeyUTC(): string {
-  return new Date().toISOString().slice(0, 10);
+  return dayKey();
 }
 
 /**
