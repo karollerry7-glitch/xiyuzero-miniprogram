@@ -1,5 +1,6 @@
 // 5D 单词详情 — 词库/收藏等列表的展开内容（与学习会话同源数据 UnitFull.fiveD）
 import { useEffect } from "react";
+import { parseConjugation } from "../shared/conjugation";
 import { View, Text } from "@tarojs/components";
 import type { UnitFull } from "../shared/types";
 import { speak, preload } from "../services/tts";
@@ -79,12 +80,29 @@ export function UnitDetail({ unit }: { unit: UnitFull }) {
       {fiveD.grammar.length > 0 && (
         <View className="ud__sec">
           <Text className="ud__sec-title">语法</Text>
-          {fiveD.grammar.map((g, i) => (
-            <View className="ud__grammar-item" key={i}>
-              <Text className="ud__num">{i + 1}</Text>
-              <Text className="ud__val">{g}</Text>
-            </View>
-          ))}
+          {fiveD.grammar.map((g, i) => {
+            // 动词变位条目 → 每个人称单独一行、左对齐排版
+            const conj = parseConjugation(g);
+            return (
+              <View className="ud__grammar-item" key={i}>
+                <Text className="ud__num">{i + 1}</Text>
+                {conj ? (
+                  <View className="conj">
+                    <Text className="conj__title">{conj.title}</Text>
+                    {conj.rows.map((r, j) => (
+                      <View className="conj__row" key={j}>
+                        <Text className="conj__pron">{r.pronoun}</Text>
+                        <Text className="conj__form">{r.form}</Text>
+                      </View>
+                    ))}
+                    {conj.note && <Text className="conj__note">{conj.note}</Text>}
+                  </View>
+                ) : (
+                  <Text className="ud__val">{g}</Text>
+                )}
+              </View>
+            );
+          })}
         </View>
       )}
 

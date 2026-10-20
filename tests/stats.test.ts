@@ -11,6 +11,7 @@ import {
 } from "../src/shared/stats.js";
 import { initialReviewState, scheduleNext } from "../src/shared/srs.js";
 import type { DayActivity, ReviewState } from "../src/shared/types.js";
+import { dayKey } from "../src/shared/datekey.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -30,7 +31,8 @@ function day(partial: Partial<DayActivity>): DayActivity {
 }
 
 function todayKey(offsetDays = 0): string {
-  return new Date(Date.now() - offsetDays * DAY).toISOString().slice(0, 10);
+  // 东八区自然日（与 src/shared/datekey.ts 一致）——UTC 版在 0~8 点会算错「今天」
+  return dayKey(new Date(Date.now() - offsetDays * DAY));
 }
 
 // ---- 空数据（新用户）----

@@ -6,6 +6,7 @@ import Taro, {useDidShow, useShareAppMessage, useShareTimeline} from "@tarojs/ta
 import { View, Text, Button, Input } from "@tarojs/components";
 import type { Rating, UnitFull } from "../../shared/types";
 import { acceptedForms, checkAnswer } from "../../shared/answer";
+import { parseConjugation } from "../../shared/conjugation";
 import { fetchUnitsByIds, fetchUnitsPage } from "../../services/units";
 import { markLearned, rateUnit, recordRecallResult } from "../../services/progress";
 import { syncNow } from "../../services/sync";
@@ -457,12 +458,31 @@ export default function SessionPage() {
               {step === 2 && (
                 <View>
                   <Text className="step-hint">③ 必须知道的语法</Text>
-                  {fiveD.grammar.map((g, i) => (
-                    <View className="grammar__item" key={i}>
-                      <Text className="grammar__num">{i + 1}</Text>
-                      <Text className="grammar__text">{g}</Text>
-                    </View>
-                  ))}
+                  {fiveD.grammar.map((g, i) => {
+                    // 动词变位条目 → 每个人称单独一行、左对齐排版
+                    const conj = parseConjugation(g);
+                    return (
+                      <View className="grammar__item" key={i}>
+                        <Text className="grammar__num">{i + 1}</Text>
+                        {conj ? (
+                          <View className="conj">
+                            <Text className="conj__title">{conj.title}</Text>
+                            {conj.rows.map((r, j) => (
+                              <View className="conj__row" key={j}>
+                                <Text className="conj__pron">{r.pronoun}</Text>
+                                <Text className="conj__form">{r.form}</Text>
+                              </View>
+                            ))}
+                            {conj.note && (
+                              <Text className="conj__note">{conj.note}</Text>
+                            )}
+                          </View>
+                        ) : (
+                          <Text className="grammar__text">{g}</Text>
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
               )}
 

@@ -1,5 +1,6 @@
 // 存储持久化 + 学习进度保存 + App 重启恢复 + 云端恢复 + 无网络 测试
 import { test } from "node:test";
+import { dayKey } from "../src/shared/datekey.js";
 import * as assert from "node:assert/strict";
 import {
   setRequestHandler,
@@ -24,7 +25,7 @@ import {
 import { syncNow } from "../src/services/sync.js";
 import type { DayActivity, ReviewState } from "../src/shared/types.js";
 
-const today = new Date().toISOString().slice(0, 10);
+const today = dayKey();
 
 // ---- 学习进度保存 ----
 test("学习进度保存：markLearned → 本地 reviews + 今日活动记账", () => {
@@ -155,7 +156,7 @@ test("活动记录限量 90 天：超限裁剪最旧", async () => {
   const { setActivityAll } = await import("../src/utils/storage.js");
   const all: Record<string, DayActivity> = {};
   for (let i = 0; i < 120; i++) {
-    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const d = dayKey(new Date(Date.now() - i * 86400000));
     all[d] = { ...getTodayActivity(), newLearned: 1 };
   }
   setActivityAll(all);

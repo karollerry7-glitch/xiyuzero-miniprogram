@@ -2,6 +2,7 @@
 // 覆盖：Free 权限、Pro 权限模拟、会员过期降级、每日额度计算（防重置）、
 //       等级边界、有效每日目标
 import { test } from "node:test";
+import { dayKey } from "../src/shared/datekey.js";
 import * as assert from "node:assert/strict";
 import "./helpers/setup.js";
 import {
@@ -44,7 +45,7 @@ function proView(cycle: "monthly" | "yearly" | "lifetime", proUntil: string | nu
 }
 
 const DAY = 24 * 60 * 60 * 1000;
-const today = new Date().toISOString().slice(0, 10);
+const today = dayKey();
 
 // ---- 统一配置 ----
 test("统一配置：Free 每日 10 词、年费价、等级边界", () => {
@@ -84,7 +85,7 @@ test("防绕过：断网本地学 10 个但服务端还不知道 → 仍按 10 �
 });
 
 test("防重置：服务端记录昨日数据不影响今日（日期规则）", () => {
-  const yesterday = new Date(Date.now() - DAY).toISOString().slice(0, 10);
+  const yesterday = dayKey(new Date(Date.now() - DAY));
   const m = freeView({ date: yesterday, newLearnedToday: 5 }); // 昨天的用量
   // usage.date !== today → 服务端今日用量 0；本地今日 0 → 可学 10
   assert.equal(remainingNewToday(m, 0), 10);

@@ -163,3 +163,50 @@
     line-height: 1.6;
   }
 }
+
+/* 动词变位块：每个人称单独一行、左对齐（session 5D 语法 / 词库详情共用结构） */
+.conj {
+  flex: 1;
+  min-width: 0;
+
+  &__title {
+    display: block;
+    font-size: 24rpx;
+    color: $red;
+    font-weight: 600;
+    margin-bottom: 8rpx;
+  }
+
+  &__row {
+    display: flex;
+    align-items: baseline;
+    padding: 5rpx 0;
+    text-align: left;
+  }
+
+  &__pron {
+    flex-shrink: 0;
+    width: 150rpx;
+    font-size: 24rpx;
+    color: $ink-40;
+  }
+
+  &__form {
+    flex: 1;
+    min-width: 0;
+    font-size: 30rpx;
+    font-weight: 600;
+    color: $ink;
+    letter-spacing: 0.5rpx;
+  }
+
+  &__note {
+    display: block;
+    margin-top: 10rpx;
+    padding-top: 10rpx;
+    border-top: 1rpx dashed $ink-15;
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: $ink-40;
+  }
+}
