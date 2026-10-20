@@ -1,6 +1,6 @@
 // 我的页 — 用户信息 + 学习统计 + 完整菜单（Phase 9 全面完善）
 // 数据全部来自既有 reviews / activity 缓存（云端同步后本地渲染），不重写学习逻辑
-import Taro, { useDidShow } from "@tarojs/taro";
+import Taro, {useDidShow, useShareAppMessage, useShareTimeline} from "@tarojs/taro";
 import { useState } from "react";
 import { View, Text } from "@tarojs/components";
 import { useAuth } from "../../services/auth";
@@ -42,6 +42,11 @@ function proUntilText(proUntil: string | null): string | null {
 }
 
 export default function MyPage() {
+
+  // 转发与分享（页面缺钩子会显示「当前页面不可转发/不可分享」）
+  useShareAppMessage(() => ({ title: "沃天澜·西语｜把西语真正学进脑子", path: "/pages/learn/index" }));
+  useShareTimeline(() => ({ title: "沃天澜·西语｜把西语真正学进脑子" }));
+
   const { user, loading, error, login } = useAuth();
 
   const [reviews, setReviews] = useState<Record<string, ReviewState>>(() =>

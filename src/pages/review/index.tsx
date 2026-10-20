@@ -1,12 +1,17 @@
 // 复习页 — 回答：今天需要复习什么？入口 → review-session（Phase 3 已接通）
 import { View, Text, Button } from "@tarojs/components";
-import Taro, { useDidShow } from "@tarojs/taro";
+import Taro, {useDidShow, useShareAppMessage, useShareTimeline} from "@tarojs/taro";
 import { useState } from "react";
 import { localOverview } from "../../services/units";
 import { EmptyState } from "../../components/states";
 import "./index.scss";
 
 export default function ReviewPage() {
+
+  // 转发与分享（页面缺钩子会显示「当前页面不可转发/不可分享」）
+  useShareAppMessage(() => ({ title: "智能间隔复习 · 沃天澜·西语", path: "/pages/learn/index" }));
+  useShareTimeline(() => ({ title: "智能间隔复习 · 沃天澜·西语" }));
+
   // useDidShow：从复习会话返回时刷新到期数
   const [, force] = useState(0);
   useDidShow(() => force((n) => n + 1));

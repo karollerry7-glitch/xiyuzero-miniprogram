@@ -2,7 +2,7 @@
 // 数据来源：当日真实学习记录（会话完成时写入 xz_orbit_words）；
 // 连续天数/本周累计由 activity 派生，天然幂等（刷新/重复进入不会重复计数）。
 import { useEffect, useMemo, useState } from "react";
-import Taro from "@tarojs/taro";
+import Taro, { useShareAppMessage, useShareTimeline } from "@tarojs/taro";
 import { View, Text, Button, Image } from "@tarojs/components";
 import { StarOrbit } from "../../components/star-orbit";
 import { OrbitPoster, PosterData } from "../../components/orbit-poster";
@@ -38,6 +38,11 @@ interface NavMetrics {
 }
 
 export default function OrbitPage() {
+
+  // 转发与分享（页面缺钩子会显示「当前页面不可转发/不可分享」）
+  useShareAppMessage(() => ({ title: "我在沃天澜连续打卡学西语 🔥", path: "/pages/learn/index" }));
+  useShareTimeline(() => ({ title: "我在沃天澜连续打卡学西语 🔥" }));
+
   const [words, setWords] = useState<OrbitWord[]>([]);
   const [total, setTotal] = useState(0); // 最终词数
   const [count, setCount] = useState(0); // 动效计数 0→total

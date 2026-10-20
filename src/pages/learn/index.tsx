@@ -3,22 +3,39 @@
 // 审核整改：游客优先 — 首次进入直接看首页，可体验 5D 学习；
 //           登录入口仅由用户主动点击触发，不再自动跳转登录页。
 import { useState } from "react";
-import Taro, { useDidShow } from "@tarojs/taro";
+import Taro, {
+  useDidShow,
+  useShareAppMessage,
+  useShareTimeline,
+} from "@tarojs/taro";
 import { View, Text, Button } from "@tarojs/components";
 import { useAuth } from "../../services/auth";
 import { localOverview, TodayOverview } from "../../services/units";
-import { getTodayActivity } from "../../utils/storage";
+import { getTodayActivity, getLastQuizDate } from "../../utils/storage";
 import {
   effectiveDailyGoal,
   getCachedMembership,
 } from "../../services/membership";
+import {
+  reviewPressureBlocked,
+  quizDue,
+  QUIZ_INTERVAL_DAYS,
+  QUIZ_SIZE,
+  QUIZ_MIN_LEARNED,
+} from "../../services/schedule";
 import { EmptyState } from "../../components/states";
 import "./index.scss";
+
+const SHARE_TITLE = "沃天澜·西语｜5D 五步法学西语，记得住才是真的会";
 
 export default function LearnPage() {
   const { user, refresh } = useAuth();
   const [ov, setOv] = useState<TodayOverview>(() => localOverview());
   const [today, setToday] = useState(() => getTodayActivity());
+
+  // 转发与分享（截图问题：「当前页面不可转发/不可分享」= 页面缺分享钩子）
+  useShareAppMessage(() => ({ title: SHARE_TITLE, path: "/pages/learn/index" }));
+  useShareTimeline(() => ({ title: SHARE_TITLE }));
 
   // 从会话页返回时刷新概览（tab 页常驻，useDidShow 是 Taro 的 onShow）
   useDidShow(() => {
@@ -41,8 +58,19 @@ export default function LearnPage() {
 
   const finished = ov.newToday >= dailyGoal;
 
+  // 复习压力控制：待复习超阈值 → 今日暂停新词，CTA 转为旧词巩固
+  const reviewBlocked = reviewPressureBlocked(ov.dueCount);
+
+  // 复习小测（检索练习）：每 3 天一次，学满 QUIZ_MIN_LEARNED 词后出现
+  const quizAvailable =
+    ov.learnedTotal >= QUIZ_MIN_LEARNED && quizDue(getLastQuizDate());
+
   const goMembership = () => {
     Taro.navigateTo({ url: "/pages/membership/index" });
+  };
+
+  const goQuiz = () => {
+    Taro.navigateTo({ url: "/pages/review-session/index?mode=quiz" });
   };
 
   return (
@@ -81,14 +109,20 @@ export default function LearnPage() {
       {/* 主 CTA：游客与登录用户一致，均可直接体验 5D 学习 */}
       <View className="cta-zone">
         <Button className="btn btn--primary" onClick={startSession}>
-          {finished ? "今日任务完成 🎉" : "先体验 5D 学习 →"}
+          {finished
+            ? "今日任务完成 🎉"
+            : reviewBlocked
+              ? "先巩固旧词 →"
+              : "先体验 5D 学习 →"}
         </Button>
         <Text className="cta-zone__hint">
-          {finished
-            ? member.isPro
-              ? "随时可以提前学更多，或去复习巩固"
-              : "随时可以复习巩固 · 明天再学新词"
-            : "5D 五步法 · 发音 → 含义 → 语法 → 词块 → 例句"}
+          {reviewBlocked && !finished
+            ? `待复习 ${ov.dueCount} 个较多，今日暂停新词 · 消化后再学更牢固`
+            : finished
+              ? member.isPro
+                ? "随时可以提前学更多，或去复习巩固"
+                : "随时可以复习巩固 · 明天再学新词"
+              : "5D 五步法 · 发音 → 含义 → 语法 → 词块 → 例句"}
         </Text>
         {/* Free 用户学完当日额度：自然升级提示 */}
         {finished && !member.isPro && (
@@ -121,6 +155,20 @@ export default function LearnPage() {
               ? ` · ${today.wrongIds.length} 个待加强`
               : " · 全部过关"}
           </Text>
+        </View>
+      )}
+
+      {/* 复习小测：遗忘曲线 · 每 3 天一次检索练习 */}
+      {quizAvailable && (
+        <View className="card card--guest" onClick={goQuiz}>
+          <View className="card__guest-main">
+            <Text className="card__guest-title">📝 复习小测</Text>
+            <Text className="card__guest-desc">
+              {QUIZ_INTERVAL_DAYS} 天一次检索练习 · {QUIZ_SIZE} 个词快问快答，
+              在忘记之前巩固它
+            </Text>
+          </View>
+          <Text className="card__guest-arrow">›</Text>
         </View>
       )}
 

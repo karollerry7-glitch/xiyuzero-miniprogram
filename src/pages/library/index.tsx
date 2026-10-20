@@ -1,6 +1,6 @@
 // 词库页 — 等级筛选 + 分页列表 + 收藏星标 + 点击展开 5D 详情
 import { useCallback, useEffect, useState } from "react";
-import { useDidShow } from "@tarojs/taro";
+import {useDidShow, useShareAppMessage, useShareTimeline} from "@tarojs/taro";
 import { View, Text, ScrollView, Input } from "@tarojs/components";
 import {
   fetchUnitsByIds,
@@ -17,6 +17,11 @@ const LEVELS = ["全部", "Starter", "A1", "A2", "B1", "B2"];
 const PAGE_SIZE = 50;
 
 export default function LibraryPage() {
+
+  // 转发与分享（页面缺钩子会显示「当前页面不可转发/不可分享」）
+  useShareAppMessage(() => ({ title: "4505 核心词汇分类词库 · 沃天澜·西语", path: "/pages/learn/index" }));
+  useShareTimeline(() => ({ title: "4505 核心词汇分类词库 · 沃天澜·西语" }));
+
   const [level, setLevel] = useState<string>("全部");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);

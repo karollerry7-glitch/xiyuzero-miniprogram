@@ -8,6 +8,8 @@ const KEY_TOKEN_EXP = "xz_token_exp";
 const KEY_USER = "xz_user";
 const KEY_REVIEWS_CACHE = "xz_reviews_cache";
 const KEY_PENDING_EVENTS = "xz_pending_events";
+// 复习小测（检索练习）上次完成日期，东八区 dayKey 格式
+const KEY_LAST_QUIZ = "xz_last_quiz_date";
 
 // wx.setStorageSync 单 key 上限 1MB，评分事件队列单独管理并限量
 const MAX_PENDING_EVENTS = 200;
@@ -429,6 +431,25 @@ export function getMembershipCache(): MembershipCache | null {
 export function setMembershipCache(c: MembershipCache): void {
   try {
     Taro.setStorageSync(KEY_MEMBERSHIP, JSON.stringify(c));
+  } catch {
+    /* ignore */
+  }
+}
+
+
+// ============ 复习小测（检索练习）日期 ============
+
+export function getLastQuizDate(): string | null {
+  try {
+    return Taro.getStorageSync(KEY_LAST_QUIZ) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function setLastQuizDate(k: string): void {
+  try {
+    Taro.setStorageSync(KEY_LAST_QUIZ, k);
   } catch {
     /* ignore */
   }

@@ -2,7 +2,7 @@
 // 流程与 Web 端 app/learn/page.tsx 一致（flash → recall → done）；
 // 评分语义与 Web lib/store.ts 完全一致（services/progress.ts）
 import { useEffect, useMemo, useRef, useState } from "react";
-import Taro, { useDidShow } from "@tarojs/taro";
+import Taro, {useDidShow, useShareAppMessage, useShareTimeline} from "@tarojs/taro";
 import { View, Text, Button, Input } from "@tarojs/components";
 import type { Rating, UnitFull } from "../../shared/types";
 import { acceptedForms, checkAnswer } from "../../shared/answer";
@@ -19,6 +19,10 @@ import {
   MembershipView,
 } from "../../services/membership";
 import { FREE_DAILY_NEW_WORD_LIMIT } from "../../config/membership";
+import {
+  reviewPressureBlocked,
+  pickReviewFillIds,
+} from "../../services/schedule";
 import { Loading, ErrorState, EmptyState } from "../../components/states";
 import "./index.scss";
 
@@ -73,6 +77,11 @@ async function buildQueue(
 }
 
 export default function SessionPage() {
+
+  // 转发与分享（页面缺钩子会显示「当前页面不可转发/不可分享」）
+  useShareAppMessage(() => ({ title: "沃天澜·西语｜5D 五步法学西语，记得住才是真的会", path: "/pages/learn/index" }));
+  useShareTimeline(() => ({ title: "沃天澜·西语｜5D 五步法学西语，记得住才是真的会" }));
+
   const [phase, setPhase] = useState<Phase>("loading");
   const [queue, setQueue] = useState<UnitFull[]>([]);
   const [idx, setIdx] = useState(0);
@@ -84,6 +93,8 @@ export default function SessionPage() {
   const fbAt = useRef(0);
   // 会员视图（Entitlement 层）
   const [member, setMember] = useState<MembershipView>(() => getCachedMembership());
+  // 复习巩固模式：待复习超阈值，当日新词配额改为旧词巩固（遗忘曲线压力控制）
+  const [fillMode, setFillMode] = useState(false);
 
   const load = async () => {
     setPhase("loading");
@@ -99,6 +110,30 @@ export default function SessionPage() {
 
       // Free 额度：服务端用量与本地记账取大（防"断网学完→同步失败→再学"绕过）
       const remaining = remainingNewToday(m, getTodayActivity().newLearned);
+
+      // 复习压力控制：待复习 > 100 时暂停新词，配额改由旧词巩固填满。
+      // 复习永远免费可用（Free 用户也不受额度限制）。
+      const reviews = getReviewsCache();
+      const dueCount = Object.values(reviews).filter(
+        (r) =>
+          r.status !== "new" &&
+          new Date(r.dueDate).getTime() <= Date.now()
+      ).length;
+      if (reviewPressureBlocked(dueCount)) {
+        const goal = effectiveDailyGoal(m, getPrefs().dailyNew);
+        const fillIds = pickReviewFillIds(reviews, goal);
+        const fillCards = await fetchUnitsByIds(fillIds);
+        if (fillCards.length > 0) {
+          setQueue(fillCards);
+          setIdx(0);
+          setStep(0);
+          setFillMode(true);
+          setPhase("recall"); // 已学词直接进回忆，跳过 5D 新词五步卡
+          return;
+        }
+      }
+      setFillMode(false);
+
       if (remaining !== null && remaining <= 0) {
         setPhase("quota");
         return;
@@ -161,7 +196,8 @@ export default function SessionPage() {
   };
 
   const startRecall = () => {
-    if (unit) markLearned(unit.id);
+    // 复习巩固模式的词不是新词：不记 markLearned（避免污染今日新词计数）
+    if (unit && !fillMode) markLearned(unit.id);
     setInput("");
     setFeedback(null);
     setPhase("recall");
@@ -193,9 +229,9 @@ export default function SessionPage() {
     } else {
       // 会话完成 → 云端同步（让服务端及时拿到今日用量，跨设备额度一致）
       syncNow();
-      // 达成今日新词目标 → 星轨打卡页（Phase 13 仪式页；数据为当日真实学习记录）
+      // 达成今日新词目标 → 星轨打卡页（仅新词模式；巩固模式不计新词不触发）
       const goal = effectiveDailyGoal(member, getPrefs().dailyNew);
-      if (queue.length > 0 && getTodayActivity().newLearned >= goal) {
+      if (!fillMode && queue.length > 0 && getTodayActivity().newLearned >= goal) {
         setLastOrbitWords(
           queue.map((u) => ({
             id: u.id,
@@ -223,11 +259,14 @@ export default function SessionPage() {
   const goReview = () => Taro.switchTab({ url: "/pages/review/index" });
 
   const progressText = useMemo(() => {
-    if (phase === "flash" || phase === "recall")
-      return `新学习 ${idx + 1} / ${queue.length}`;
+    if (phase === "flash" || phase === "recall") {
+      return fillMode
+        ? `复习巩固 ${idx + 1} / ${queue.length}`
+        : `新学习 ${idx + 1} / ${queue.length}`;
+    }
     if (phase === "done") return "完成";
     return "";
-  }, [phase, idx, queue.length]);
+  }, [phase, idx, queue.length, fillMode]);
 
   // ---------- 渲染 ----------
   if (phase === "loading") {
@@ -307,7 +346,9 @@ export default function SessionPage() {
           <Text className="done__icon">🎉</Text>
           <Text className="done__title">今日学习完成</Text>
           <Text className="done__desc">
-            学习了 {queue.length} 个新表达，系统已自动安排复习
+            {fillMode
+              ? `巩固了 ${queue.length} 个旧词，记忆更牢固了`
+              : `学习了 ${queue.length} 个新表达，系统已自动安排复习`}
           </Text>
           <View className="done__stats">
             <View className="done__stat">
@@ -349,6 +390,13 @@ export default function SessionPage() {
           退出
         </Text>
       </View>
+
+      {/* 复习巩固模式提示：待复习超限，今日暂停新词 */}
+      {fillMode && (
+        <Text className="fill-hint">
+          📌 待复习较多，今日暂停新词 · 巩固旧词记得更牢
+        </Text>
+      )}
 
       {/* ============ 五步卡 ============ */}
       {phase === "flash" && (

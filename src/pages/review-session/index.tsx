@@ -2,7 +2,7 @@
 // 流程与 Web 端 app/review/page.tsx 一致（meaning/sound/chunk 轮换 → reveal → rating）；
 // 完成后触发云端同步（services/sync.ts）。
 import { useEffect, useRef, useState } from "react";
-import Taro from "@tarojs/taro";
+import Taro, { useShareAppMessage, useShareTimeline } from "@tarojs/taro";
 import { View, Text, Button, Input } from "@tarojs/components";
 import type { Rating, UnitFull } from "../../shared/types";
 import { acceptedForms, checkAnswer } from "../../shared/answer";
@@ -12,6 +12,7 @@ import { syncNow } from "../../services/sync";
 import { speak, preload } from "../../services/tts";
 import { getReviewsCache } from "../../utils/storage";
 import { isDue } from "../../shared/srs";
+import { pickQuizIds, markQuizDone, QUIZ_INTERVAL_DAYS } from "../../services/schedule";
 import { Loading, ErrorState, EmptyState } from "../../components/states";
 import "./index.scss";
 
@@ -69,6 +70,14 @@ function expectedOf(queue: UnitFull[], i: number): string {
 }
 
 export default function ReviewSessionPage() {
+
+  // 转发与分享（页面缺钩子会显示「当前页面不可转发/不可分享」）
+  useShareAppMessage(() => ({ title: "沃天澜·西语｜智能间隔复习", path: "/pages/learn/index" }));
+  useShareTimeline(() => ({ title: "沃天澜·西语｜智能间隔复习" }));
+
+  // 小测模式：/pages/review-session/index?mode=quiz（首页每 3 天的检索练习入口）
+  const isQuiz =
+    Taro.getCurrentInstance().router?.params?.mode === "quiz";
   const [phase, setPhase] = useState<Phase>("loading");
   const [queue, setQueue] = useState<UnitFull[]>([]);
   const [idx, setIdx] = useState(0);
@@ -176,7 +185,7 @@ export default function ReviewSessionPage() {
   if (phase === "loading") {
     return (
       <View className="session" key="loading">
-        <Loading text="正在准备复习内容…" />
+        <Loading text={isQuiz ? "正在生成复习小测…" : "正在准备复习内容…"} />
       </View>
     );
   }
@@ -211,9 +220,11 @@ export default function ReviewSessionPage() {
       <View className="session" key="done">
         <View className="done">
           <Text className="done__icon">✅</Text>
-          <Text className="done__title">本轮复习完成</Text>
+          <Text className="done__title">{isQuiz ? "小测完成 📝" : "本轮复习完成"}</Text>
           <Text className="done__desc">
-            复习了 {queue.length} 个表达，进度已同步到云端
+            {isQuiz
+              ? `${queue.length} 个词检索练习完成，${3} 天后自动出现下一次小测`
+              : `复习了 ${queue.length} 个表达，进度已同步到云端`}
           </Text>
           <View className="done__stats">
             <View className="done__stat">
@@ -259,7 +270,7 @@ export default function ReviewSessionPage() {
       {/* 顶栏 */}
       <View className="topbar">
         <Text className="topbar__progress">
-          复习 {idx + 1} / {queue.length}
+          {isQuiz ? "小测" : "复习"} {idx + 1} / {queue.length}
         </Text>
         <Text className="topbar__exit" onClick={exit}>
           退出
