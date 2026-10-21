@@ -57,10 +57,57 @@ export interface LearningUnit {
   grammarNote: string;
   commonMistakes: string;
   fiveD?: FiveD; // 5D 数据（API 下发时合并）
+  comm?: CommTask; // 微型交流任务（API 下发时合并；试点 20 单元）
 }
 
 export type Rating = "again" | "hard" | "good" | "easy";
 export type UnitStatus = "new" | "learning" | "review" | "active" | "mastered";
+
+// ============ 微型交流任务（Context 维度的交流闭环） ============
+// 与后端 learn.xiyuzero.com/types 的 CommTask 镜像，修改时两端同步。
+// 判分规则为教师式标注（规则式 MVP，未接入 AI，不伪造智能评分）。
+
+export interface CommTask {
+  /** 「我能……」交流目标（中文） */
+  goal: string;
+  /** 情境说明（中文；展示给用户的任务背景） */
+  scenario: string;
+  /** 交流要求（中文；用户需要表达什么） */
+  task: string;
+  /** 判分规则（教师式标注） */
+  check: {
+    key: { label: string; any: string[] }[];
+    rejects?: { message: string; any: string[] }[];
+    target?: { label: string; any: string[] };
+  };
+  /** 参考表达（提交后展示；不是唯一合法答案） */
+  reference: string[];
+  /** 追问（对方输入西语 + 中文；考察理解与临场回应） */
+  followUp?: {
+    prompt: string;
+    promptZh: string;
+    task: string;
+    check: {
+      key: { label: string; any: string[] }[];
+      rejects?: { message: string; any: string[] }[];
+      target?: { label: string; any: string[] };
+    };
+    reference: string[];
+  };
+  /** 迁移任务（改变角色/目的/信息量；复习期出现，不与首学同题） */
+  transfer?: {
+    scenario: string;
+    task: string;
+    check: {
+      key: { label: string; any: string[] }[];
+      rejects?: { message: string; any: string[] }[];
+      target?: { label: string; any: string[] };
+    };
+    reference: string[];
+  };
+  /** 常见错误提示（中文） */
+  commonErrors?: string[];
+}
 
 export interface ReviewState {
   status: UnitStatus;

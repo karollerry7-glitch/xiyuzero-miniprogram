@@ -1,225 +1,58 @@
-// 会员页 — Free / Pro 展示 + 开通引导（当前售卖模式）
-// 售卖链路：添加客服微信 HOME6814 购买（¥29.9 / 年）→ 获得兑换码 → 本页输入激活
-// 所有价格 / 额度 / 权益均来自 config/membership.ts（统一配置）
-import { useEffect, useState } from "react";
+// 会员页 — 2026-10-22 收费会员已移除
+// 本页保留路由（旧版本分享链接/深链直达不 404），内容改为免费公告。
+// 原 Pro 付费、兑换码激活、客服购买链路全部下线。
+import { View, Text, Button } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import { View, Text, Button, Input, Image } from "@tarojs/components";
-import {
-  CUSTOMER_SERVICE_WECHAT,
-  PLAN_FEATURES,
-  PRICING_PLANS,
-  TOTAL_UNITS,
-} from "../../config/membership";
-import {
-  fetchMembership,
-  getCachedMembership,
-  MembershipView,
-  redeemCode,
-} from "../../services/membership";
-import { ApiError } from "../../services/request";
-import { Loading } from "../../components/states";
-import csWechatQr from "../../assets/cs-wechat-qr.jpg";
+import { TOTAL_UNITS } from "../../config/membership";
 import "./index.scss";
 
-const plan = PRICING_PLANS[0]; // 唯一方案：年会员 ¥29.9
+const FEATURES = [
+  { icon: "📚", label: `全部 ${TOTAL_UNITS} 词库`, desc: "Starter 到 B2 全等级开放" },
+  { icon: "♾️", label: "每日新词不限量", desc: "按自己的节奏学，仅受自设目标约束" },
+  { icon: "🧠", label: "5D 五步法 + 间隔复习", desc: "智能复习与小测全部开放" },
+  { icon: "📊", label: "完整学习统计", desc: "五维掌握 + 能力档案" },
+  { icon: "☁️", label: "云端同步", desc: "学习记录换机不丢失" },
+];
 
 export default function MembershipPage() {
-  const [m, setM] = useState<MembershipView>(() => getCachedMembership());
-  const [loading, setLoading] = useState(true);
-  const [code, setCode] = useState("");
-  const [redeeming, setRedeeming] = useState(false);
-  const [showService, setShowService] = useState(false);
-
-  useEffect(() => {
-    fetchMembership()
-      .then(setM)
-      .catch(() => {
-        // 离线：保持缓存视图（Entitlement 层兜底 Free）
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const back = () => {
-    Taro.navigateBack({
-      fail: () => Taro.switchTab({ url: "/pages/my/index" }),
-    });
-  };
-
-  /** 开通引导：打开客服弹窗（二维码 + 微信号） */
-  const onUpgrade = () => setShowService(true);
-
-  const closeService = () => setShowService(false);
-
-  /** 复制客服微信号 */
-  const copyWechat = () => {
-    Taro.setClipboardData({
-      data: CUSTOMER_SERVICE_WECHAT,
-      success: () => {
-        Taro.showToast({ title: "已复制，去微信添加客服", icon: "none" });
-      },
-    });
-  };
-
-  /** 兑换码激活 */
-  const onRedeem = async () => {
-    const trimmed = code.trim();
-    if (!trimmed) {
-      Taro.showToast({ title: "请输入兑换码", icon: "none" });
-      return;
-    }
-    if (redeeming) return;
-    setRedeeming(true);
-    try {
-      await redeemCode(trimmed);
-      const view = await fetchMembership();
-      setM(view);
-      Taro.showToast({ title: "激活成功，欢迎加入 PRO 🎉", icon: "success" });
-    } catch (e) {
-      const msg =
-        e instanceof ApiError
-          ? e.message
-          : "激活失败，请稍后重试";
-      Taro.showToast({ title: msg, icon: "none" });
-    } finally {
-      setRedeeming(false);
-    }
+  const goHome = () => {
+    Taro.switchTab({ url: "/pages/learn/index" });
   };
 
   return (
-    <View className="member">
-      {/* 顶栏 */}
-      <View className="member__topbar">
-        <Text className="member__back" onClick={back}>
-          ←
+    <View className="membership membership--free">
+      <View className="free-hero">
+        <Text className="free-hero__icon">🎉</Text>
+        <Text className="free-hero__title">全部功能已免费开放</Text>
+        <Text className="free-hero__sub">
+          沃天澜·西语已取消收费会员。所有学习功能对每位用户完全开放，无需付费。
         </Text>
-        <Text className="member__title">沃天澜 Pro</Text>
-        <Text className="member__topbar-ph" />
       </View>
 
-      {/* 当前状态 */}
-      <View className="member__current">
-        {loading && <Loading text="正在获取会员状态…" />}
-        {!loading && (
-          <View>
-            <Text className="member__current-plan">
-              {m.isPro ? "PRO 会员" : "FREE 免费版"}
-            </Text>
-            <Text className="member__current-desc">
-              {m.isPro
-                ? m.billingCycle === "lifetime"
-                  ? "终身会员 · 感谢支持"
-                  : `有效期至 ${m.proUntil?.slice(0, 10) ?? "—"}`
-                : `已解锁 Starter + A1 词库 · 每日可学 ${m.entitlements.dailyNewLimit} 个新词`}
-            </Text>
+      <View className="free-list">
+        {FEATURES.map((f) => (
+          <View className="free-list__item" key={f.label}>
+            <Text className="free-list__icon">{f.icon}</Text>
+            <View className="free-list__main">
+              <Text className="free-list__label">{f.label}</Text>
+              <Text className="free-list__desc">{f.desc}</Text>
+            </View>
           </View>
-        )}
+        ))}
       </View>
 
-      {!loading && !m.isPro && (
-        <View>
-          {/* 年费卡片（唯一方案） */}
-          <View className="member__plans">
-            <View className="member__plan member__plan--rec">
-              <Text className="member__plan-badge">限时年价</Text>
-              <Text className="member__plan-name">{plan.name}</Text>
-              <Text className="member__plan-price">
-                <Text className="member__plan-cur">¥</Text>
-                {plan.price}
-              </Text>
-              <Text className="member__plan-permonth">12 个月有效</Text>
-              <Text className="member__plan-note">{plan.note}</Text>
-              <Button
-                className="member__buy-btn member__buy-btn--card"
-                onClick={onUpgrade}
-              >
-                添加客服微信开通
-              </Button>
-            </View>
-          </View>
+      <View className="free-note">
+        <Text className="free-note__text">
+          此前已是 Pro 的用户不受影响，全部功能继续可用。
+          如有疑问可通过「关于沃天澜」页联系我们。
+        </Text>
+      </View>
 
-          {/* 兑换码激活 */}
-          <View className="member__redeem">
-            <Text className="member__redeem-title">兑换码激活</Text>
-            <Text className="member__redeem-desc">
-              已购买？输入客服发放的兑换码，立即解锁全部功能
-            </Text>
-            <View className="member__redeem-row">
-              <Input
-                className="member__redeem-input"
-                placeholder="XZ-XXXX-XXXX-XXXX"
-                placeholderClass="member__redeem-ph"
-                value={code}
-                maxlength={20}
-                onInput={(e) => setCode(e.detail.value)}
-              />
-              <Button
-                className={`member__redeem-btn ${
-                  redeeming ? "member__redeem-btn--busy" : ""
-                }`}
-                disabled={redeeming}
-                loading={redeeming}
-                onClick={onRedeem}
-              >
-                {redeeming ? "激活中…" : "激活 Pro"}
-              </Button>
-            </View>
-          </View>
-
-          {/* 权益对比 */}
-          <View className="member__compare">
-            <View className="member__compare-head">
-              <Text className="member__compare-col">权益</Text>
-              <Text className="member__compare-col">FREE</Text>
-              <Text className="member__compare-col member__compare-col--pro">
-                PRO
-              </Text>
-            </View>
-            {PLAN_FEATURES.map((f) => (
-              <View key={f.label} className="member__compare-row">
-                <Text className="member__compare-label">{f.label}</Text>
-                <Text className="member__compare-val">{f.free}</Text>
-                <Text className="member__compare-val member__compare-val--pro">
-                  {f.pro}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          {/* 说明 */}
-          <View className="member__buy">
-            <Text className="member__buy-hint">
-              ¥29.9 / 年 · 解锁全部 {TOTAL_UNITS} 词 · 支持所有后续更新
-            </Text>
-          </View>
-        </View>
-      )}
-
-      {/* 客服微信弹窗（二维码 + 微信号 + 复制） */}
-      {showService && (
-        <View className="svc" onClick={closeService}>
-          <View className="svc__card" onClick={(e) => e.stopPropagation()}>
-            <Text className="svc__close" onClick={closeService}>
-              ✕
-            </Text>
-            <Text className="svc__title">开通 Pro 年会员</Text>
-            <Text className="svc__desc">微信扫码添加客服，付款 ¥29.9 后发放兑换码</Text>
-            <Image
-              className="svc__qr"
-              src={csWechatQr}
-              mode="aspectFit"
-              showMenuByLongpress
-            />
-            <Text className="svc__qr-hint">长按识别二维码 · 添加客服微信</Text>
-            <View className="svc__wx-row">
-              <Text className="svc__wx-label">微信号</Text>
-              <Text className="svc__wx-id">{CUSTOMER_SERVICE_WECHAT}</Text>
-            </View>
-            <Button className="svc__copy" onClick={copyWechat}>
-              复制微信号
-            </Button>
-          </View>
-        </View>
-      )}
+      <View className="free-actions">
+        <Button className="btn-main" onClick={goHome}>
+          开始学习 →
+        </Button>
+      </View>
     </View>
   );
 }

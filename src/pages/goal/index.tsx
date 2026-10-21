@@ -1,11 +1,9 @@
 // 学习目标设置 — 起始等级 + 每日新词数（写 prefs，session 构建队列时实时读取）
-// 等级权限遵循会员层：Free 只能选 Starter / A1（config/membership.ts FREE_LEVELS）
+// 2026-10-22 收费会员移除：全部等级与每日目标对所有用户开放
 import Taro from "@tarojs/taro";
 import { useState } from "react";
 import { View, Text } from "@tarojs/components";
-import { getCachedMembership, levelAllowed } from "../../services/membership";
 import { getPrefs, setPrefs } from "../../utils/storage";
-import { FREE_DAILY_NEW_WORD_LIMIT } from "../../config/membership";
 import "./index.scss";
 
 const LEVEL_OPTIONS: { level: string; desc: string }[] = [
@@ -20,36 +18,15 @@ const DAILY_OPTIONS = [5, 10, 20, 30, 50];
 
 export default function GoalPage() {
   const initial = getPrefs();
-  const m = getCachedMembership();
   const [startLevel, setStartLevel] = useState(initial.startLevel);
   const [dailyNew, setDailyNew] = useState(initial.dailyNew);
 
   const onPickLevel = (level: string) => {
-    if (!levelAllowed(m, level)) {
-      Taro.showModal({
-        title: "需要 Pro",
-        content: `${level} 词库为 Pro 专属，Free 用户可从 Starter / A1 开始学习。`,
-        confirmText: "去开通",
-        success: (res) => {
-          if (res.confirm) {
-            Taro.navigateTo({ url: "/pages/membership/index" });
-          }
-        },
-      });
-      return;
-    }
     setStartLevel(level);
   };
 
   const onPickDaily = (n: number) => {
     setDailyNew(n);
-    if (!m.isPro && n > FREE_DAILY_NEW_WORD_LIMIT) {
-      Taro.showToast({
-        title: `Free 每日上限 ${FREE_DAILY_NEW_WORD_LIMIT} 词`,
-        icon: "none",
-        duration: 2000,
-      });
-    }
   };
 
   const onSave = () => {
@@ -66,7 +43,6 @@ export default function GoalPage() {
           <Text className="goal__sub">新词从该等级开始出题</Text>
         </View>
         {LEVEL_OPTIONS.map((o) => {
-          const locked = !levelAllowed(m, o.level);
           const on = o.level === startLevel;
           return (
             <View
@@ -75,10 +51,7 @@ export default function GoalPage() {
               onClick={() => onPickLevel(o.level)}
             >
               <View className="goal__opt-main">
-                <Text className="goal__opt-name">
-                  {o.level}
-                  {locked && <Text className="goal__lock">PRO</Text>}
-                </Text>
+                <Text className="goal__opt-name">{o.level}</Text>
                 <Text className="goal__opt-desc">{o.desc}</Text>
               </View>
               <View className={`goal__radio ${on ? "goal__radio--on" : ""}`} />
@@ -103,12 +76,9 @@ export default function GoalPage() {
             </View>
           ))}
         </View>
-        {!m.isPro && (
-          <Text className="goal__note">
-            Free 用户每日最多学习 {FREE_DAILY_NEW_WORD_LIMIT} 个新词，设置更高时按{" "}
-            {FREE_DAILY_NEW_WORD_LIMIT} 生效；复习与浏览不受限。
-          </Text>
-        )}
+        <Text className="goal__note">
+          建议每天 10 分钟左右：先复习到期内容，再学少量新表达，学有余力再调高。
+        </Text>
       </View>
 
       <View className="goal__save" onClick={onSave}>

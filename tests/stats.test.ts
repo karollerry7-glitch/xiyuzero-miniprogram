@@ -161,23 +161,36 @@ test("汇总：已学/已掌握/待复习计数", () => {
 });
 
 // ---- SRS 快速回归 ----
-test("SRS：good 首评 3 天 / again 10 分钟 / easy 7 天", () => {
+test("SRS 阶梯：good 首评 1 天 / again 10 分钟 / easy 首评 3 天（1/3/7/14/30 起点）", () => {
   const good = scheduleNext(initialReviewState(), "good");
-  assert.equal(good.interval, 3);
+  assert.equal(good.interval, 1); // 阶梯第一步：1 天
   assert.equal(good.status, "learning");
 
   const again = scheduleNext(initialReviewState(), "again");
   assert.ok(again.interval < 0.01); // 10 分钟（以天计）
 
   const easy = scheduleNext(initialReviewState(), "easy");
-  assert.equal(easy.interval, 7);
+  assert.equal(easy.interval, 3); // easy 跳两阶：1 → 3
 });
 
-test("SRS：错误率高时间隔增长放慢（penalty 0.8）", () => {
+test("SRS 阶梯：成功后沿 1→3→7→14→30 升阶", () => {
+  let r: ReviewState = { ...initialReviewState(), interval: 1, status: "review" };
+  r = scheduleNext(r, "good");
+  assert.equal(r.interval, 3);
+  r = scheduleNext(r, "good");
+  assert.equal(r.interval, 7);
+  r = scheduleNext(r, "good");
+  assert.equal(r.interval, 14);
+  r = scheduleNext(r, "good");
+  assert.equal(r.interval, 30);
+  r = scheduleNext(r, "good");
+  assert.equal(r.interval, 54); // 30 * 1.8（超阶梯顶后温和增长）
+});
+
+test("SRS：错误率高时 good 停留当前阶（不放慢为乘法惩罚）", () => {
   let r: ReviewState = { ...initialReviewState(), interval: 10, status: "review" };
   // 制造高错误率：3 错 1 对
   r = { ...r, correctCount: 1, wrongCount: 3 };
   const next = scheduleNext(r, "good");
-  // 10 * 2.5 * 0.8 = 20（无 penalty 会是 25）
-  assert.equal(next.interval, 20);
+  assert.equal(next.interval, 10); // 高错误率：停留当前阶，巩固后再升
 });

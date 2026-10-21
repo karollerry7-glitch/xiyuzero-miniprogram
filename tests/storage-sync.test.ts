@@ -42,9 +42,9 @@ test("学习进度保存：markLearned → 本地 reviews + 今日活动记账",
   assert.equal(getTodayActivity().meaningTotal, 1);
 });
 
-test("复习评分：rateUnit good → interval 3 + reviewed 记账", () => {
+test("复习评分：rateUnit good → interval 1（阶梯第一步）+ reviewed 记账", () => {
   rateUnit("a1-001", "good");
-  assert.equal(getReviewsCache()["a1-001"].interval, 3);
+  assert.equal(getReviewsCache()["a1-001"].interval, 1);
   assert.equal(getTodayActivity().reviewed, 1);
 });
 
@@ -131,11 +131,11 @@ test("云端恢复：服务端更新 → 本地采纳（含 activity 与 reviews
   assert.equal(r, "adopted");
   assert.equal(getReviewsCache()["b1-001"].status, "review");
   assert.equal(getTodayActivity().newLearned, 10);
-  // 重装后额度记账恢复：今日已学 10 → Free 额度已用完
+  // 2026-10-22 收费会员移除：重装后学习统计恢复，但不再有「额度用完」概念
   const { remainingNewToday } = await import("../src/services/membership.js");
   const { getCachedMembership } = await import("../src/services/membership.js");
   const m = { ...getCachedMembership(), usage: { date: today, newLearnedToday: 10 } };
-  assert.equal(remainingNewToday(m, getTodayActivity().newLearned), 0);
+  assert.equal(remainingNewToday(m, getTodayActivity().newLearned), null); // 恒不限
 });
 
 // ---- token 持久化 ----

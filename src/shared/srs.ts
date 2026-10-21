@@ -6,10 +6,30 @@
 import { Rating, ReviewState } from "./types";
 
 // 简单可靠的 SRS 引擎，独立模块，未来可替换为 FSRS。
-// 初始间隔参考：Again 10 分钟 / Hard 1 天 / Good 3 天 / Easy 7 天
-// 之后按 1 → 3 → 7 → 14 → 30 → 60 → 120 天序列扩大，并根据错误率动态调整。
+// 间隔策略（2026-10-21 调整）：各次成功后的间隔走可配置阶梯
+//   1 → 3 → 7 → 14 → 30 天（设计起点，依据真实延迟表现迭代）；
+//   30 天后按 ×1.8 温和增长（上限 180 天），错误率高时放慢。
+//   Again 10 分钟 / Hard 停留在当前阶 / Good 升一阶 / Easy 升两阶。
 
 const MIN = 1 / (24 * 6); // 10 分钟（以天为单位）
+
+/** 成功后的间隔阶梯（可配置起点，spec §8） */
+export const SRS_LADDER = [1, 3, 7, 14, 30] as const;
+const LADDER_MAX = SRS_LADDER[SRS_LADDER.length - 1];
+const CAP_DAYS = 180;
+
+/** 升 n 阶（超出阶梯顶后温和增长；找不到更大阶保持当前） */
+function stepUp(cur: number, steps: number): number {
+  let val = cur;
+  for (let i = 0; i < steps; i++) {
+    if (val < LADDER_MAX) {
+      val = SRS_LADDER.find((s) => s > val) ?? LADDER_MAX;
+    } else {
+      val = Math.min(Math.round(val * 1.8), CAP_DAYS);
+    }
+  }
+  return Math.max(1, val);
+}
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
@@ -44,13 +64,15 @@ export function scheduleNext(prev: ReviewState, rating: Rating): ReviewState {
       interval = MIN;
       break;
     case "hard":
-      interval = cur <= 0 ? 1 : Math.max(1, Math.round(cur * 1.2 * penalty));
+      // 停留在当前阶（新词从 1 天起步）
+      interval = cur <= 0 ? 1 : cur;
       break;
     case "good":
-      interval = cur <= 0 ? 3 : Math.round(Math.min(cur * 2.5 * penalty, 120));
+      // 正常升一阶；错误率高（penalty<1）时停留当前阶，巩固后再升
+      interval = cur <= 0 ? 1 : stepUp(cur, penalty < 1 ? 0 : 1);
       break;
     case "easy":
-      interval = cur <= 0 ? 7 : Math.round(Math.min(cur * 3.5 * penalty, 180));
+      interval = cur <= 0 ? 3 : stepUp(cur, 2);
       break;
   }
 

@@ -1,25 +1,22 @@
-// 学习会话页 — Phase 2 核心：5D 五步卡 → 主动回忆 → 四档评分 → SRS 排程
-// 流程与 Web 端 app/learn/page.tsx 一致（flash → recall → done）；
-// 评分语义与 Web lib/store.ts 完全一致（services/progress.ts）
+// 学习会话页 — Phase 2 核心：5D 五步卡 → 主动回忆 → 微型交流 → 四档评分 → SRS 排程
+// 2026-10-21 Make It Stick 增量优化：
+//   - 提交前隐藏参考（先提取后看答案）
+//   - 有交流任务的词：回忆后进入「情境 → 西语表达 → 追问」微型交流
+//   - 每次作答记入能力证据（独立/延迟/情境），掌握由证据推导
+//   - 收费会员已移除：新词不受权益上限，仅受用户自设每日目标约束
 import { useEffect, useMemo, useRef, useState } from "react";
 import Taro, {useDidShow, useShareAppMessage, useShareTimeline} from "@tarojs/taro";
 import { View, Text, Button, Input } from "@tarojs/components";
 import type { Rating, UnitFull } from "../../shared/types";
 import { acceptedForms, checkAnswer } from "../../shared/answer";
 import { parseConjugation } from "../../shared/conjugation";
+import { gradeComm, recallToEvidence, type CommGrade } from "../../shared/grade";
 import { fetchUnitsByIds, fetchUnitsPage } from "../../services/units";
 import { markLearned, rateUnit, recordRecallResult } from "../../services/progress";
+import { markExposure, peekExposure, recordAttempt } from "../../services/mastery";
 import { syncNow } from "../../services/sync";
 import { speak, preload } from "../../services/tts";
-import { getPrefs, getReviewsCache, getTodayActivity, setLastOrbitWords } from "../../utils/storage";
-import {
-  fetchMembership,
-  getCachedMembership,
-  effectiveDailyGoal,
-  remainingNewToday,
-  MembershipView,
-} from "../../services/membership";
-import { FREE_DAILY_NEW_WORD_LIMIT } from "../../config/membership";
+import { getPrefs, getReviewsCache, getTodayActivity, setLastOrbitWords, bumpTodayActivity } from "../../utils/storage";
 import {
   reviewPressureBlocked,
   pickReviewFillIds,
@@ -27,7 +24,7 @@ import {
 import { Loading, ErrorState, EmptyState } from "../../components/states";
 import "./index.scss";
 
-type Phase = "loading" | "error" | "flash" | "recall" | "done" | "alldone" | "quota";
+type Phase = "loading" | "error" | "flash" | "recall" | "comm" | "rate" | "done" | "alldone";
 
 const STEPS = [
   { key: "sound", label: "发音" },
@@ -40,19 +37,14 @@ const STEPS = [
 const RATINGS: { key: Rating; label: string; hint: string }[] = [
   { key: "again", label: "再来一次", hint: "10 分钟" },
   { key: "hard", label: "困难", hint: "1 天" },
-  { key: "good", label: "掌握", hint: "3 天" },
-  { key: "easy", label: "太简单", hint: "7 天" },
+  { key: "good", label: "掌握", hint: "升一阶" },
+  { key: "easy", label: "太简单", hint: "跳两阶" },
 ];
 
 const LEVELS = ["Starter", "A1", "A2", "B1", "B2"];
 
-/** 组装今日新词队列：API 找新词（本地 reviews 过滤）→ ids 批量取 5D 完整卡
- *  maxNew：本次会话最多学几个新词（Entitlement 层计算的剩余额度）
- *  allowedLevels：null = 不限（Pro）；Free = Starter + A1 */
-async function buildQueue(
-  maxNew: number,
-  allowedLevels: readonly string[] | null
-): Promise<UnitFull[]> {
+/** 组装今日新词队列：API 找新词（本地 reviews 过滤）→ ids 批量取 5D 完整卡 */
+async function buildQueue(maxNew: number): Promise<UnitFull[]> {
   const reviews = getReviewsCache();
   const prefs = getPrefs();
   const need = Math.max(0, Math.min(prefs.dailyNew, maxNew));
@@ -60,10 +52,8 @@ async function buildQueue(
 
   const startIdx = Math.max(0, LEVELS.indexOf(prefs.startLevel));
   outer: for (let li = startIdx; li < LEVELS.length; li++) {
-    const level = LEVELS[li];
-    if (allowedLevels && !allowedLevels.includes(level)) break; // Free 词库边界
     for (let page = 1; ; page++) {
-      const res = await fetchUnitsPage(level, page, 50);
+      const res = await fetchUnitsPage(LEVELS[li], page, 50);
       for (const s of res.items) {
         const r = reviews[s.id];
         if (r && r.status !== "new") continue;
@@ -90,30 +80,23 @@ export default function SessionPage() {
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState<null | "correct" | "close" | "wrong">(null);
   const [stats, setStats] = useState({ correct: 0, close: 0, wrong: 0 });
-  // 防连击：反馈出现后 350ms 内忽略评分点击（对齐 Web GUARD_MS）
+  // 交流任务状态：step 0 = 原情境，1 = 追问，2 = 交流完成
+  const [commStep, setCommStep] = useState(0);
+  const [commInput, setCommInput] = useState("");
+  const [commGrade, setCommGrade] = useState<CommGrade | null>(null);
+  // 词块提示：揭示后本次作答不再记独立证据
+  const [commHintShown, setCommHintShown] = useState(false);
+  // 防连击：反馈出现后 350ms 内忽略评分点击
   const fbAt = useRef(0);
-  // 会员视图（Entitlement 层）
-  const [member, setMember] = useState<MembershipView>(() => getCachedMembership());
-  // 复习巩固模式：待复习超阈值，当日新词配额改为旧词巩固（遗忘曲线压力控制）
+  // 复习巩固模式：待复习超阈值，当日新词配额改为旧词巩固
   const [fillMode, setFillMode] = useState(false);
+  // 证据暴露冻结：题目开始前取最近暴露时间（延迟判定基准，本题中揭示不影响本题）
+  const frozenExpo = useRef(0);
 
   const load = async () => {
     setPhase("loading");
     try {
-      // Entitlement：先尝试服务端视图（离线回落缓存）
-      let m = member;
-      try {
-        m = await fetchMembership();
-        setMember(m);
-      } catch {
-        /* 离线：使用缓存视图 */
-      }
-
-      // Free 额度：服务端用量与本地记账取大（防"断网学完→同步失败→再学"绕过）
-      const remaining = remainingNewToday(m, getTodayActivity().newLearned);
-
-      // 复习压力控制：待复习 > 100 时暂停新词，配额改由旧词巩固填满。
-      // 复习永远免费可用（Free 用户也不受额度限制）。
+      // 复习压力控制：待复习 > 100 时暂停新词，配额改由旧词巩固填满
       const reviews = getReviewsCache();
       const dueCount = Object.values(reviews).filter(
         (r) =>
@@ -121,7 +104,7 @@ export default function SessionPage() {
           new Date(r.dueDate).getTime() <= Date.now()
       ).length;
       if (reviewPressureBlocked(dueCount)) {
-        const goal = effectiveDailyGoal(m, getPrefs().dailyNew);
+        const goal = getPrefs().dailyNew;
         const fillIds = pickReviewFillIds(reviews, goal);
         const fillCards = await fetchUnitsByIds(fillIds);
         if (fillCards.length > 0) {
@@ -129,21 +112,13 @@ export default function SessionPage() {
           setIdx(0);
           setStep(0);
           setFillMode(true);
-          setPhase("recall"); // 已学词直接进回忆，跳过 5D 新词五步卡
+          startRecallOf(fillCards[0]);
           return;
         }
       }
       setFillMode(false);
 
-      if (remaining !== null && remaining <= 0) {
-        setPhase("quota");
-        return;
-      }
-      // remaining = null（Pro 不限）；Free 时把本次会话上限压到剩余额度
-      const maxNew = remaining === null ? Number.POSITIVE_INFINITY : remaining;
-      const allowed = m.entitlements.levels; // null = Pro 不限
-
-      const cards = await buildQueue(maxNew, allowed);
+      const cards = await buildQueue(Number.POSITIVE_INFINITY);
       if (cards.length === 0) {
         setPhase("alldone");
         return;
@@ -157,6 +132,25 @@ export default function SessionPage() {
     }
   };
 
+  /** 进入回忆阶段（题面揭示前冻结暴露时间） */
+  const startRecallOf = (u: UnitFull) => {
+    frozenExpo.current = peekExposure(u.id, "recognize");
+    setInput("");
+    setFeedback(null);
+    setCommStep(0);
+    setCommInput("");
+    setCommGrade(null);
+    setCommHintShown(false);
+    setPhase("recall");
+  };
+
+  const startRecall = () => {
+    if (!unit) return;
+    // 复习巩固模式的词不是新词：不记 markLearned（避免污染今日新词计数）
+    if (!fillMode) markLearned(unit.id);
+    startRecallOf(unit);
+  };
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -164,14 +158,14 @@ export default function SessionPage() {
 
   const unit = queue[idx];
 
-  // 进入新词卡自动播发音
+  // 进入新词卡自动播发音；同时记教学暴露（5D 卡展示 = 认词通道的暴露时间）
   useDidShow(() => {
     if (phase === "flash" && unit) speak(unit.spanish);
   });
   useEffect(() => {
     if (phase === "flash" && unit) {
+      markExposure(unit.id, "recognize");
       const t = setTimeout(() => speak(unit.spanish), 300);
-      // 预缓冲下一张卡的发音（切卡时秒播）
       const next = queue[idx + 1];
       if (next) preload(next.spanish);
       return () => clearTimeout(t);
@@ -196,14 +190,6 @@ export default function SessionPage() {
     else setStep(step + 1);
   };
 
-  const startRecall = () => {
-    // 复习巩固模式的词不是新词：不记 markLearned（避免污染今日新词计数）
-    if (unit && !fillMode) markLearned(unit.id);
-    setInput("");
-    setFeedback(null);
-    setPhase("recall");
-  };
-
   const submitRecall = () => {
     if (!unit || feedback !== null) return;
     const result = checkAnswer(
@@ -213,9 +199,88 @@ export default function SessionPage() {
     );
     setFeedback(result);
     fbAt.current = Date.now();
+    // 记账：SRS 统计（保留）+ 能力证据（新增）
     recordRecallResult(unit.id, result);
+    const ev = recallToEvidence(result);
+    recordAttempt(unit.id, {
+      channel: "recognize",
+      scenarioId: "base",
+      independent: true, // 回忆题提交前不显示任何提示/答案
+      helpUsed: [],
+      revise: false,
+      communication: ev.communication,
+      targetForm: ev.targetForm,
+    });
+    markExposure(unit.id, "recognize"); // 答案揭示 → 更新暴露基准（影响下一次延迟判定）
     setStats((s) => ({ ...s, [result]: s[result] + 1 }));
     speak(unit.spanish);
+    // 有交流任务的新词 → 微型交流；巩固旧词与其他词 → 直接评分
+    if (unit.comm && !fillMode) {
+      enterComm();
+    } else {
+      toRate();
+    }
+  };
+
+  // ============ 微型交流任务 ============
+
+  const comm = unit?.comm;
+
+  /** 进入交流步骤（冻结产出通道暴露时间） */
+  const enterComm = () => {
+    if (!unit) return;
+    frozenExpo.current = peekExposure(unit.id, "produce");
+    setCommInput("");
+    setCommGrade(null);
+    setCommHintShown(false);
+    setPhase("comm");
+  };
+
+  const submitComm = () => {
+    if (!unit || !comm || commGrade !== null) return;
+    const task = commStep === 0 ? comm : comm.followUp;
+    if (!task) return;
+    const grade = gradeComm(commInput, task.check);
+    setCommGrade(grade);
+    fbAt.current = Date.now();
+    // 独立性：提交前揭示了词块提示 → 不算独立证据（帮助类型明确记录）
+    const independent = !commHintShown;
+    recordAttempt(unit.id, {
+      channel: "produce",
+      scenarioId: commStep === 0 ? "base" : "followup",
+      independent,
+      helpUsed: commHintShown ? ["hint"] : [],
+      revise: false,
+      communication: grade.communication,
+      targetForm: grade.targetForm === "none" ? null : grade.targetForm,
+      frozenExposureAt: frozenExpo.current,
+    });
+    if (grade.communication === "pass") {
+      // 情境表达成功 → 记一次输出（今日活动统计）
+      bumpTodayActivity((d) => ({ ...d, output: d.output + 1 }));
+    }
+    // 参考表达已展示 → 更新暴露基准
+    markExposure(unit.id, "produce");
+    const ref = task.reference[0];
+    if (ref) speak(ref);
+  };
+
+  /** 交流步骤推进：base → followup → 评分 */
+  const commNext = () => {
+    if (!unit) return;
+    if (commStep === 0 && comm?.followUp) {
+      setCommStep(1);
+      setCommInput("");
+      setCommGrade(null);
+      setCommHintShown(false);
+      return;
+    }
+    setPhase("rate");
+  };
+
+  /** 无交流任务的词：回忆反馈后直接评分 */
+  const toRate = () => {
+    setPhase("rate");
   };
 
   const submitRating = (r: Rating) => {
@@ -228,10 +293,10 @@ export default function SessionPage() {
       setFeedback(null);
       setPhase("flash");
     } else {
-      // 会话完成 → 云端同步（让服务端及时拿到今日用量，跨设备额度一致）
+      // 会话完成 → 云端同步
       syncNow();
       // 达成今日新词目标 → 星轨打卡页（仅新词模式；巩固模式不计新词不触发）
-      const goal = effectiveDailyGoal(member, getPrefs().dailyNew);
+      const goal = getPrefs().dailyNew;
       if (!fillMode && queue.length > 0 && getTodayActivity().newLearned >= goal) {
         setLastOrbitWords(
           queue.map((u) => ({
@@ -260,7 +325,7 @@ export default function SessionPage() {
   const goReview = () => Taro.switchTab({ url: "/pages/review/index" });
 
   const progressText = useMemo(() => {
-    if (phase === "flash" || phase === "recall") {
+    if (phase === "flash" || phase === "recall" || phase === "comm" || phase === "rate") {
       return fillMode
         ? `复习巩固 ${idx + 1} / ${queue.length}`
         : `新学习 ${idx + 1} / ${queue.length}`;
@@ -310,36 +375,6 @@ export default function SessionPage() {
     );
   }
 
-  // Free 每日额度用完：自然的 Pro 升级提示（不删数据、复习照常）
-  if (phase === "quota") {
-    return (
-      <View className="session" key="quota">
-        <View className="done">
-          <Text className="done__icon">🌅</Text>
-          <Text className="done__title">今日 {FREE_DAILY_NEW_WORD_LIMIT} 个新词已学完</Text>
-          <Text className="done__desc">
-            明天再来学新词。已学内容不会丢失，复习不受限制——现在就去巩固吧。
-          </Text>
-          <View className="quota-upgrade" onClick={() => Taro.navigateTo({ url: "/pages/membership/index" })}>
-            <Text className="quota-upgrade__title">
-              升级 Pro · 每日不限新词
-            </Text>
-            <Text className="quota-upgrade__sub">Pro 年卡 ¥29.9 / 年 · 每日不限新词</Text>
-            <Text className="quota-upgrade__arrow">›</Text>
-          </View>
-          <View className="done__actions">
-            <Button className="btn-main" onClick={goReview}>
-              去复习 →
-            </Button>
-            <Button className="btn-outline" onClick={goHome}>
-              回到首页
-            </Button>
-          </View>
-        </View>
-      </View>
-    );
-  }
-
   if (phase === "done") {
     return (
       <View className="session" key="done">
@@ -365,6 +400,9 @@ export default function SessionPage() {
               <Text className="done__stat-label">需加强</Text>
             </View>
           </View>
+          <Text className="done__evidence-note">
+            活动记录 ≠ 掌握证据：「能验证」以无提示独立提取 + 跨日保持为准，见我的页能力档案
+          </Text>
           <View className="done__actions">
             <Button className="btn-main" onClick={goHome}>
               回到首页
@@ -568,81 +606,189 @@ export default function SessionPage() {
         </View>
       )}
 
-      {/* ============ 主动回忆 ============ */}
+      {/* ============ 主动回忆（提交前不显示答案） ============ */}
       {phase === "recall" && (
         <View className="card">
           <Text className="recall__hint">Chinese → Spanish 主动回忆</Text>
           <Text className="recall__zh">{unit.chinese}</Text>
 
-          {feedback === null ? (
+          <View>
+            <Input
+              className="recall__input"
+              value={input}
+              onInput={(e) => setInput(e.detail.value)}
+              onConfirm={submitRecall}
+              placeholder="先自己想一想，输入对应的西班牙语…"
+              placeholderClass="recall__placeholder"
+              focus
+            />
+            <View className="nav">
+              <View className="nav__next">
+                <Button className="btn-main btn-main--dark" onClick={submitRecall}>
+                  检查答案
+                </Button>
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* ============ 微型交流（情境 → 表达 → 追问） ============ */}
+      {phase === "comm" && comm && (() => {
+        const task = commStep === 0 ? comm : comm.followUp;
+        if (!task) return null;
+        return (
+        <View className="card">
+          <Text className="comm__goal">🎯 我能：{commStep === 0 ? comm.goal : "听懂追问并继续交流"}</Text>
+          {commStep === 0 ? (
+            <View>
+              <Text className="comm__scenario">{comm.scenario}</Text>
+              <Text className="comm__task">{comm.task}</Text>
+            </View>
+          ) : (
+            <View>
+              <Text className="comm__scenario">对方回复：</Text>
+              <View className="comm__prompt">
+                <Text className="comm__prompt-es">{comm.followUp?.prompt}</Text>
+                <Text className="comm__prompt-zh">{comm.followUp?.promptZh}</Text>
+              </View>
+              <Text className="comm__task">{comm.followUp?.task}</Text>
+            </View>
+          )}
+
+          {commGrade === null ? (
             <View>
               <Input
-                className="recall__input"
-                value={input}
-                onInput={(e) => setInput(e.detail.value)}
-                onConfirm={submitRecall}
-                placeholder="输入对应的西班牙语…"
+                className="comm__input"
+                value={commInput}
+                onInput={(e) => setCommInput(e.detail.value)}
+                onConfirm={submitComm}
+                placeholder="用西语组织你的回应…"
                 placeholderClass="recall__placeholder"
                 focus
               />
+              {!commHintShown ? (
+                <Text className="comm__help" onClick={() => setCommHintShown(true)}>
+                  想不起来？看词块提示（本次将不记独立证据）
+                </Text>
+              ) : (
+                <View className="comm__hint-box">
+                  <Text className="comm__hint-title">词块支架（本次不记独立证据）：</Text>
+                  {(fiveD?.chunks ?? []).slice(0, 3).map((c, i) => (
+                    <Text className="comm__hint-line" key={i}>
+                      {c.spanish}（{c.chinese}）
+                    </Text>
+                  ))}
+                </View>
+              )}
               <View className="nav">
                 <View className="nav__next">
-                  <Button className="btn-main btn-main--dark" onClick={submitRecall}>
-                    检查答案
+                  <Button className="btn-main btn-main--dark" onClick={submitComm}>
+                    提交回应
                   </Button>
                 </View>
               </View>
             </View>
           ) : (
-            <View>
-              <View className={`recall__feedback recall__feedback--${feedback}`}>
-                {feedback === "correct"
-                  ? "✓ 完全正确"
-                  : feedback === "close"
-                    ? "≈ 接近正确（注意拼写）"
-                    : "✗ 错误"}
+            <View className="comm__feedback">
+              <View
+                className={`comm__verdict comm__verdict--${commGrade.communication}`}
+              >
+                {commGrade.communication === "pass"
+                  ? "✅ 意思表达清楚了，交流可以继续"
+                  : commGrade.communication === "fail"
+                    ? "✗ 交流未成功"
+                    : "❓ 待复核（本次未判定，不计成功也不计失败）"}
               </View>
 
-              <View className="recall__answer">
-                <Text className="recall__answer-text">{unit.spanish}</Text>
-                <View className="audio-btn" onClick={() => speak(unit.spanish)}>
-                  🔊
-                </View>
-              </View>
-              <Text className="recall__example">
-                {unit.example.spanish} — {unit.example.chinese}
-              </Text>
-
-              {fiveD && (
-                <View className="recall__more">
-                  {fiveD.grammar.slice(0, 2).map((g, i) => (
-                    <Text className="recall__more-line" key={i}>
-                      · {g}
-                    </Text>
-                  ))}
-                  {fiveD.chunks[0] && (
-                    <Text className="recall__more-line">
-                      · 常用：{fiveD.chunks[0].spanish}（{fiveD.chunks[0].chinese}）
-                    </Text>
-                  )}
-                </View>
+              {commGrade.issues.map((iss, i) => (
+                <Text className="comm__issue" key={`i${i}`}>
+                  · {iss}
+                </Text>
+              ))}
+              {commGrade.notes.map((n, i) => (
+                <Text className="comm__note" key={`n${i}`}>
+                  · {n}
+                </Text>
+              ))}
+              {commGrade.targetForm === "pass" && (
+                <Text className="comm__target-ok">
+                  ✓ 目标表达已使用——记一次主动产出证据
+                </Text>
               )}
 
-              <View className="ratings">
-                {RATINGS.map((r) => (
-                  <View
-                    className="ratings__btn"
-                    key={r.key}
-                    onClick={() => submitRating(r.key)}
-                  >
-                    <Text className="ratings__btn-label">{r.label}</Text>
-                    <Text className="ratings__btn-hint">{r.hint}</Text>
+              <View className="comm__ref">
+                <Text className="comm__ref-title">参考表达（不止一种说法）：</Text>
+                {task.reference.map((r, i) => (
+                  <View className="comm__ref-line" key={i}>
+                    <Text className="comm__ref-es">{r}</Text>
+                    <View className="audio-btn" onClick={() => speak(r)}>🔊</View>
                   </View>
                 ))}
               </View>
-              <Text className="ratings-tip">记住：完全正确选「掌握」，想不起来选「再来一次」</Text>
+
+              <View className="nav">
+                <View className="nav__next">
+                  <Button className="btn-main" onClick={commNext}>
+                    {commStep === 0 && comm.followUp ? "对方又问了一句 →" : "完成交流，进入评分 →"}
+                  </Button>
+                </View>
+              </View>
             </View>
           )}
+        </View>
+        );
+      })()}
+
+      {/* ============ 回忆反馈 + 评分（回忆/交流结束后统一在此） ============ */}
+      {phase === "rate" && (
+        <View className="card">
+          <View className={`recall__feedback recall__feedback--${feedback}`}>
+            {feedback === "correct"
+              ? "✓ 完全正确"
+              : feedback === "close"
+                ? "≈ 接近正确（注意拼写）"
+                : "✗ 错误"}
+          </View>
+
+          <View className="recall__answer">
+            <Text className="recall__answer-text">{unit.spanish}</Text>
+            <View className="audio-btn" onClick={() => speak(unit.spanish)}>
+              🔊
+            </View>
+          </View>
+          <Text className="recall__example">
+            {unit.example.spanish} — {unit.example.chinese}
+          </Text>
+
+          {fiveD && (
+            <View className="recall__more">
+              {fiveD.grammar.slice(0, 2).map((g, i) => (
+                <Text className="recall__more-line" key={i}>
+                  · {g}
+                </Text>
+              ))}
+              {fiveD.chunks[0] && (
+                <Text className="recall__more-line">
+                  · 常用：{fiveD.chunks[0].spanish}（{fiveD.chunks[0].chinese}）
+                </Text>
+              )}
+            </View>
+          )}
+
+          <View className="ratings">
+            {RATINGS.map((r) => (
+              <View
+                className="ratings__btn"
+                key={r.key}
+                onClick={() => submitRating(r.key)}
+              >
+                <Text className="ratings__btn-label">{r.label}</Text>
+                <Text className="ratings__btn-hint">{r.hint}</Text>
+              </View>
+            ))}
+          </View>
+          <Text className="ratings-tip">记住：完全正确选「掌握」，想不起来选「再来一次」</Text>
         </View>
       )}
     </View>

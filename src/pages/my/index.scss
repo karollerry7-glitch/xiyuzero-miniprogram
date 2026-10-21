@@ -296,3 +296,34 @@
     color: $ink-40;
   }
 }
+
+// ============ 能力档案（证据推导的掌握状态） ============
+.my__mastery {
+  padding: 8rpx 0;
+}
+
+.my__mastery-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10rpx 0;
+}
+
+.my__mastery-label {
+  font-size: 26rpx;
+  color: #555;
+}
+
+.my__mastery-num {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.my__mastery-note {
+  display: block;
+  font-size: 22rpx;
+  color: #999;
+  line-height: 1.7;
+  margin-top: 12rpx;
+}

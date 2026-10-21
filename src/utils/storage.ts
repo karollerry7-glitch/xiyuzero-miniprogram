@@ -454,3 +454,26 @@ export function setLastQuizDate(k: string): void {
     /* ignore */
   }
 }
+
+// ============ 能力证据（掌握判定：历史验证记录，与复习状态分别保存） ============
+
+import type { UnitEvidence } from "../shared/evidence";
+
+const KEY_EVIDENCE = "xz_evidence";
+
+export function getEvidenceAll(): Record<string, UnitEvidence> {
+  try {
+    const raw = Taro.getStorageSync(KEY_EVIDENCE);
+    return raw ? (JSON.parse(raw) as Record<string, UnitEvidence>) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function setEvidenceAll(all: Record<string, UnitEvidence>): void {
+  try {
+    Taro.setStorageSync(KEY_EVIDENCE, JSON.stringify(all));
+  } catch {
+    // 超过 1MB 上限时放弃写入（每通道已限量 20 条，正常不会触发）
+  }
+}

@@ -13,10 +13,6 @@ import { useAuth } from "../../services/auth";
 import { localOverview, TodayOverview } from "../../services/units";
 import { getTodayActivity, getLastQuizDate } from "../../utils/storage";
 import {
-  effectiveDailyGoal,
-  getCachedMembership,
-} from "../../services/membership";
-import {
   reviewPressureBlocked,
   quizDue,
   QUIZ_INTERVAL_DAYS,
@@ -44,9 +40,8 @@ export default function LearnPage() {
     refresh(); // 从登录页返回等场景同步用户昵称
   });
 
-  // Entitlement 层：每日目标（Free 每日 10 词，Pro 用用户设置）
-  const member = getCachedMembership();
-  const dailyGoal = effectiveDailyGoal(member, ov.dailyGoal);
+  // 每日目标：功能已全面免费，直接用用户自设目标
+  const dailyGoal = ov.dailyGoal;
 
   const startSession = () => {
     Taro.navigateTo({ url: "/pages/session/index" });
@@ -64,10 +59,6 @@ export default function LearnPage() {
   // 复习小测（检索练习）：每 3 天一次，学满 QUIZ_MIN_LEARNED 词后出现
   const quizAvailable =
     ov.learnedTotal >= QUIZ_MIN_LEARNED && quizDue(getLastQuizDate());
-
-  const goMembership = () => {
-    Taro.navigateTo({ url: "/pages/membership/index" });
-  };
 
   const goQuiz = () => {
     Taro.navigateTo({ url: "/pages/review-session/index?mode=quiz" });
@@ -119,17 +110,9 @@ export default function LearnPage() {
           {reviewBlocked && !finished
             ? `待复习 ${ov.dueCount} 个较多，今日暂停新词 · 消化后再学更牢固`
             : finished
-              ? member.isPro
-                ? "随时可以提前学更多，或去复习巩固"
-                : "随时可以复习巩固 · 明天再学新词"
+              ? "随时可以提前学更多，或去复习巩固"
               : "5D 五步法 · 发音 → 含义 → 语法 → 词块 → 例句"}
         </Text>
-        {/* Free 用户学完当日额度：自然升级提示 */}
-        {finished && !member.isPro && (
-          <Text className="cta-zone__upgrade" onClick={goMembership}>
-            升级 Pro，每日不限新词 ›
-          </Text>
-        )}
       </View>
 
       {/* 游客登录入口：用户主动点击才进入登录页 */}

@@ -1,371 +1,85 @@
-@import "../../styles/tokens.scss";
+// 会员页 — 免费公告版（2026-10-22 收费会员移除）
+.membership--free {
+  padding: 40rpx 32rpx 60rpx;
+}
 
-.member {
-  min-height: 100vh;
-  padding: 24rpx 32rpx 48rpx;
-  box-sizing: border-box;
+.free-hero {
+  text-align: center;
+  padding: 48rpx 24rpx;
 
-  &__topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16rpx 0 24rpx;
-  }
-
-  &__back {
-    width: 64rpx;
-    font-size: 40rpx;
-    color: $ink;
-    padding-left: 8rpx;
+  &__icon {
+    display: block;
+    font-size: 88rpx;
+    margin-bottom: 16rpx;
   }
 
   &__title {
-    font-size: 34rpx;
+    display: block;
+    font-size: 40rpx;
     font-weight: 700;
-    color: $ink;
+    color: #222;
+    margin-bottom: 12rpx;
   }
 
-  &__topbar-ph {
-    width: 64rpx;
-  }
-
-  &__current {
-    background: #ffffff;
-    border-radius: $radius-card;
-    box-shadow: 0 4rpx 20rpx rgba(24, 34, 48, 0.05);
-    padding: 36rpx 32rpx;
-    margin-bottom: 28rpx;
-
-    &-plan {
-      font-size: 40rpx;
-      font-weight: 700;
-      color: $ink;
-    }
-
-    &-desc {
-      display: block;
-      margin-top: 10rpx;
-      font-size: 24rpx;
-      color: $ink-50;
-    }
-  }
-
-  &__plans {
-    display: flex;
-    gap: 20rpx;
-    margin-bottom: 28rpx;
-  }
-
-  &__plan {
-    position: relative;
-    flex: 1;
-    background: #ffffff;
-    border: 2rpx solid rgba(24, 34, 48, 0.08);
-    border-radius: $radius-card;
-    padding: 36rpx 24rpx 28rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-
-    &--rec {
-      border-color: $red;
-      background: #fffaf9;
-    }
-
-    &-badge {
-      position: absolute;
-      top: -14rpx;
-      right: 24rpx;
-      background: $red;
-      color: #ffffff;
-      font-size: 20rpx;
-      font-weight: 600;
-      padding: 6rpx 18rpx;
-      border-radius: 999rpx;
-    }
-
-    &-name {
-      font-size: 26rpx;
-      color: $ink-50;
-      font-weight: 600;
-    }
-
-    &-price {
-      margin-top: 14rpx;
-      font-size: 56rpx;
-      font-weight: 700;
-      color: $ink;
-    }
-
-    &-cur {
-      font-size: 28rpx;
-      font-weight: 600;
-    }
-
-    &-permonth {
-      margin-top: 6rpx;
-      font-size: 24rpx;
-      color: $red;
-      font-weight: 600;
-    }
-
-    &-note {
-      margin-top: 14rpx;
-      font-size: 20rpx;
-      color: $ink-40;
-      text-align: center;
-    }
-  }
-
-  /* ---- 兑换码激活 ---- */
-  &__redeem {
-    background: #ffffff;
-    border-radius: $radius-card;
-    box-shadow: 0 4rpx 20rpx rgba(24, 34, 48, 0.05);
-    padding: 32rpx;
-    margin-bottom: 28rpx;
-
-    &-title {
-      font-size: 30rpx;
-      font-weight: 700;
-      color: $ink;
-    }
-
-    &-desc {
-      display: block;
-      margin-top: 8rpx;
-      font-size: 22rpx;
-      color: $ink-50;
-    }
-
-    &-row {
-      display: flex;
-      align-items: center;
-      gap: 16rpx;
-      margin-top: 24rpx;
-    }
-
-    &-input {
-      flex: 1;
-      height: 80rpx;
-      padding: 0 24rpx;
-      border-radius: $radius-btn;
-      border: 2rpx solid rgba(24, 34, 48, 0.12);
-      background: #fafbfc;
-      font-size: 26rpx;
-      color: $ink;
-      font-family: "SF Mono", "Menlo", monospace;
-      letter-spacing: 1rpx;
-      box-sizing: border-box;
-    }
-
-    &-ph {
-      color: $ink-40;
-      font-family: "SF Mono", "Menlo", monospace;
-    }
-
-    &-btn {
-      flex-shrink: 0;
-      height: 80rpx;
-      line-height: 80rpx;
-      padding: 0 36rpx;
-      margin: 0;
-      background: $ink !important;
-      color: #ffffff !important;
-      font-size: 26rpx;
-      font-weight: 600;
-      border-radius: $radius-btn;
-
-      &--busy {
-        opacity: 0.7;
-      }
-    }
-  }
-
-  &__compare {
-    background: #ffffff;
-    border-radius: $radius-card;
-    box-shadow: 0 4rpx 20rpx rgba(24, 34, 48, 0.05);
-    padding: 12rpx 24rpx;
-    margin-bottom: 28rpx;
-
-    &-head,
-    &-row {
-      display: flex;
-      align-items: center;
-      padding: 20rpx 0;
-      border-bottom: 1rpx solid rgba(24, 34, 48, 0.06);
-
-      &:last-child {
-        border-bottom: none;
-      }
-    }
-
-    &-head {
-      font-size: 22rpx;
-      color: $ink-50;
-      font-weight: 600;
-    }
-
-    &-col {
-      flex: 1;
-      text-align: center;
-
-      &--pro {
-        color: $red;
-      }
-    }
-
-    &-label {
-      flex: 1.2;
-      font-size: 24rpx;
-      color: $ink;
-      font-weight: 600;
-    }
-
-    &-val {
-      flex: 1;
-      font-size: 20rpx;
-      color: $ink-50;
-      text-align: center;
-
-      &--pro {
-        color: $ink;
-        font-weight: 600;
-      }
-    }
-  }
-
-  &__buy {
-    margin-top: 8rpx;
-
-    &-btn {
-      background: rgba(24, 34, 48, 0.12) !important;
-      color: $ink-50 !important;
-      font-size: 30rpx;
-      border-radius: $radius-btn;
-      font-weight: 600;
-
-      // 价格卡内的开通按钮
-      &--card {
-        margin-top: 22rpx;
-        width: 100%;
-        background: $red !important;
-        color: #ffffff !important;
-        font-size: 26rpx;
-      }
-
-      &--busy {
-        opacity: 0.7;
-      }
-    }
-
-    &-hint {
-      display: block;
-      margin-top: 16rpx;
-      text-align: center;
-      font-size: 22rpx;
-      color: $ink-40;
-    }
+  &__sub {
+    display: block;
+    font-size: 26rpx;
+    color: #666;
+    line-height: 1.7;
   }
 }
 
-/* ---- 客服微信弹窗 ---- */
-.svc {
-  position: fixed;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-  background: rgba(24, 34, 48, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48rpx;
+.free-list {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 8rpx 24rpx;
+  margin-bottom: 24rpx;
 
-  &__card {
-    position: relative;
-    width: 100%;
-    max-width: 600rpx;
-    background: #ffffff;
-    border-radius: $radius-card;
-    padding: 48rpx 40rpx 40rpx;
+  &__item {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    box-shadow: 0 20rpx 60rpx rgba(24, 34, 48, 0.25);
+    padding: 24rpx 0;
+    border-bottom: 1rpx solid #f2f2f5;
+
+    &:last-child {
+      border-bottom: none;
+    }
   }
 
-  &__close {
-    position: absolute;
-    top: 20rpx;
-    right: 28rpx;
-    font-size: 36rpx;
-    color: $ink-40;
-    padding: 8rpx;
-    line-height: 1;
+  &__icon {
+    font-size: 44rpx;
+    margin-right: 20rpx;
   }
 
-  &__title {
-    font-size: 34rpx;
-    font-weight: 700;
-    color: $ink;
+  &__main {
+    flex: 1;
+  }
+
+  &__label {
+    display: block;
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #333;
   }
 
   &__desc {
-    margin-top: 10rpx;
+    display: block;
     font-size: 24rpx;
-    color: $ink-50;
-    text-align: center;
+    color: #999;
+    margin-top: 4rpx;
   }
+}
 
-  &__qr {
-    width: 400rpx;
-    height: 400rpx;
-    margin-top: 32rpx;
-    border-radius: 16rpx;
-    background: #fafbfc;
-  }
+.free-note {
+  padding: 0 8rpx;
 
-  &__qr-hint {
-    margin-top: 16rpx;
-    font-size: 22rpx;
-    color: $ink-40;
-  }
-
-  &__wx-row {
-    display: flex;
-    align-items: center;
-    gap: 16rpx;
-    margin-top: 28rpx;
-    padding: 18rpx 32rpx;
-    background: #f5f6f8;
-    border-radius: 999rpx;
-  }
-
-  &__wx-label {
+  &__text {
     font-size: 24rpx;
-    color: $ink-50;
+    color: #aaa;
+    line-height: 1.7;
   }
+}
 
-  &__wx-id {
-    font-size: 30rpx;
-    font-weight: 700;
-    color: $ink;
-    letter-spacing: 1rpx;
-  }
-
-  &__copy {
-    margin-top: 28rpx;
-    width: 100%;
-    height: 88rpx;
-    line-height: 88rpx;
-    padding: 0;
-    background: $red !important;
-    color: #ffffff !important;
-    font-size: 30rpx;
-    font-weight: 600;
-    border-radius: $radius-btn;
-  }
+.free-actions {
+  margin-top: 48rpx;
 }
