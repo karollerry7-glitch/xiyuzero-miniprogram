@@ -1,6 +1,7 @@
 // 错词本 — wrongCount > 0 的词条（本地 reviews 缓存 + API 详情）
 // 最近答错的排前面；点击喇叭听发音，通过复习自然移出（对 3 次答对）
-import { useDidShow } from "@tarojs/taro";
+import { useDidShow, useShareAppMessage, useShareTimeline } from "@tarojs/taro";
+import { SHARE_TITLE, SHARE_PATH, ensureShareMenu } from "../../shared/share";
 import { useState } from "react";
 import { View, Text } from "@tarojs/components";
 import { wrongWords } from "../../shared/stats";
@@ -15,6 +16,10 @@ const MAX_SHOW = 100;
 const BATCH = 20;
 
 export default function WrongbookPage() {
+  // 转发与分享（全页面统一）
+  useShareAppMessage(() => ({ title: SHARE_TITLE, path: SHARE_PATH }));
+  useShareTimeline(() => ({ title: SHARE_TITLE }));
+  ensureShareMenu();
   const [rows, setRows] = useState<
     { id: string; spanish: string; chinese: string; level: string; wrongCount: number }[]
   >([]);

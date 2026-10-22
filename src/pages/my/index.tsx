@@ -2,6 +2,7 @@
 // 数据来自既有 reviews / activity / evidence 缓存，不重写学习逻辑
 // 2026-10-21：新增「能力档案」（证据推导的掌握状态）；2026-10-22：移除收费会员
 import Taro, {useDidShow, useShareAppMessage, useShareTimeline} from "@tarojs/taro";
+import { ensureShareMenu } from "../../shared/share";
 import { useState } from "react";
 import { View, Text } from "@tarojs/components";
 import { useAuth } from "../../services/auth";
@@ -35,6 +36,7 @@ export default function MyPage() {
   // 转发与分享（页面缺钩子会显示「当前页面不可转发/不可分享」）
   useShareAppMessage(() => ({ title: "沃天澜·西语｜把西语真正学进脑子", path: "/pages/learn/index" }));
   useShareTimeline(() => ({ title: "沃天澜·西语｜把西语真正学进脑子" }));
+  ensureShareMenu();
 
   const { user, loading, error, login } = useAuth();
 

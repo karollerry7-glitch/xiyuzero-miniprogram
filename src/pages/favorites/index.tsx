@@ -1,6 +1,7 @@
 // 我的收藏 — 词库页点星标的词条（本地存储，第一版不上云）
 // 点击星标取消收藏；点击喇叭听发音
-import Taro, { useDidShow } from "@tarojs/taro";
+import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from "@tarojs/taro";
+import { SHARE_TITLE, SHARE_PATH, ensureShareMenu } from "../../shared/share";
 import { useState } from "react";
 import { View, Text } from "@tarojs/components";
 import { getFavorites, toggleFavorite } from "../../utils/storage";
@@ -12,6 +13,10 @@ import "./index.scss";
 const BATCH = 20;
 
 export default function FavoritesPage() {
+  // 转发与分享（全页面统一）
+  useShareAppMessage(() => ({ title: SHARE_TITLE, path: SHARE_PATH }));
+  useShareTimeline(() => ({ title: SHARE_TITLE }));
+  ensureShareMenu();
   const [rows, setRows] = useState<
     { id: string; spanish: string; chinese: string; level: string }[]
   >([]);

@@ -1,5 +1,6 @@
 // 通用静态内容页 — 隐私政策 / 用户协议 / 关于（?type=privacy|terms|about）
-import Taro, { getCurrentInstance } from "@tarojs/taro";
+import Taro, { getCurrentInstance, useShareAppMessage, useShareTimeline } from "@tarojs/taro";
+import { SHARE_TITLE, SHARE_PATH, ensureShareMenu } from "../../shared/share";
 import { useEffect, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import "./index.scss";
@@ -161,6 +162,10 @@ const DOCS: Record<string, LegalDoc> = {
 };
 
 export default function LegalPage() {
+  // 转发与分享（全页面统一）
+  useShareAppMessage(() => ({ title: SHARE_TITLE, path: SHARE_PATH }));
+  useShareTimeline(() => ({ title: SHARE_TITLE }));
+  ensureShareMenu();
   const [type, setType] = useState<string>("about");
   useEffect(() => {
     const params =

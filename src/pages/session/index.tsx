@@ -6,6 +6,7 @@
 //   - 收费会员已移除：新词不受权益上限，仅受用户自设每日目标约束
 import { useEffect, useMemo, useRef, useState } from "react";
 import Taro, {useDidShow, useShareAppMessage, useShareTimeline} from "@tarojs/taro";
+import { ensureShareMenu } from "../../shared/share";
 import { View, Text, Button, Input } from "@tarojs/components";
 import type { Rating, UnitFull } from "../../shared/types";
 import { acceptedForms, checkAnswer } from "../../shared/answer";
@@ -72,6 +73,7 @@ export default function SessionPage() {
   // 转发与分享（页面缺钩子会显示「当前页面不可转发/不可分享」）
   useShareAppMessage(() => ({ title: "沃天澜·西语｜5D 五步法学西语，记得住才是真的会", path: "/pages/learn/index" }));
   useShareTimeline(() => ({ title: "沃天澜·西语｜5D 五步法学西语，记得住才是真的会" }));
+  ensureShareMenu();
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [queue, setQueue] = useState<UnitFull[]>([]);

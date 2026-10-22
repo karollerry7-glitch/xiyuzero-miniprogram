@@ -1,6 +1,7 @@
 // 学习目标设置 — 起始等级 + 每日新词数（写 prefs，session 构建队列时实时读取）
 // 2026-10-22 收费会员移除：全部等级与每日目标对所有用户开放
-import Taro from "@tarojs/taro";
+import Taro, { useShareAppMessage, useShareTimeline } from "@tarojs/taro";
+import { SHARE_TITLE, SHARE_PATH, ensureShareMenu } from "../../shared/share";
 import { useState } from "react";
 import { View, Text } from "@tarojs/components";
 import { getPrefs, setPrefs } from "../../utils/storage";
@@ -17,6 +18,10 @@ const LEVEL_OPTIONS: { level: string; desc: string }[] = [
 const DAILY_OPTIONS = [5, 10, 20, 30, 50];
 
 export default function GoalPage() {
+  // 转发与分享（全页面统一）
+  useShareAppMessage(() => ({ title: SHARE_TITLE, path: SHARE_PATH }));
+  useShareTimeline(() => ({ title: SHARE_TITLE }));
+  ensureShareMenu();
   const initial = getPrefs();
   const [startLevel, setStartLevel] = useState(initial.startLevel);
   const [dailyNew, setDailyNew] = useState(initial.dailyNew);

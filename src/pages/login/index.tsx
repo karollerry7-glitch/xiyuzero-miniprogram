@@ -1,7 +1,8 @@
 // 微信登录页（两步）：① 微信一键登录（静默授权 wx.login）② 昵称填写（input type=nickname）
 // 进入路径：① 首次启动未登录时从「学习」页引导进入 ②「我的」页登录/改昵称入口
 import { useState } from "react";
-import Taro, { useDidShow } from "@tarojs/taro";
+import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from "@tarojs/taro";
+import { SHARE_TITLE, SHARE_PATH, ensureShareMenu } from "../../shared/share";
 import { View, Text, Input } from "@tarojs/components";
 import { ensureLogin, updateNickname } from "../../services/auth";
 import { syncNow } from "../../services/sync";
@@ -39,6 +40,10 @@ function recordLegalConsent(): void {
 }
 
 export default function LoginPage() {
+  // 转发与分享（全页面统一）
+  useShareAppMessage(() => ({ title: SHARE_TITLE, path: SHARE_PATH }));
+  useShareTimeline(() => ({ title: SHARE_TITLE }));
+  ensureShareMenu();
   // step: login 一键登录 / nickname 昵称填写
   const [step, setStep] = useState<"login" | "nickname">("login");
   const [loading, setLoading] = useState(false);

@@ -5,6 +5,7 @@
 //   - 小测完成正确记录日期（修复上版漏记 markQuizDone 的 bug）
 import { useEffect, useRef, useState } from "react";
 import Taro, { useShareAppMessage, useShareTimeline } from "@tarojs/taro";
+import { ensureShareMenu } from "../../shared/share";
 import { View, Text, Button, Input } from "@tarojs/components";
 import type { Rating, UnitFull } from "../../shared/types";
 import { acceptedForms, checkAnswer } from "../../shared/answer";
@@ -90,6 +91,7 @@ export default function ReviewSessionPage() {
   // 转发与分享（页面缺钩子会显示「当前页面不可转发/不可分享」）
   useShareAppMessage(() => ({ title: "沃天澜·西语｜智能间隔复习", path: "/pages/learn/index" }));
   useShareTimeline(() => ({ title: "沃天澜·西语｜智能间隔复习" }));
+  ensureShareMenu();
 
   // 小测模式：/pages/review-session/index?mode=quiz（首页每 3 天的检索练习入口）
   const isQuiz =

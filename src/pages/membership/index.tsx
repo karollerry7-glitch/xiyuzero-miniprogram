@@ -2,7 +2,8 @@
 // 本页保留路由（旧版本分享链接/深链直达不 404），内容改为免费公告。
 // 原 Pro 付费、兑换码激活、客服购买链路全部下线。
 import { View, Text, Button } from "@tarojs/components";
-import Taro from "@tarojs/taro";
+import Taro, { useShareAppMessage, useShareTimeline } from "@tarojs/taro";
+import { SHARE_TITLE, SHARE_PATH, ensureShareMenu } from "../../shared/share";
 import { TOTAL_UNITS } from "../../config/membership";
 import "./index.scss";
 
@@ -15,6 +16,10 @@ const FEATURES = [
 ];
 
 export default function MembershipPage() {
+  // 转发与分享（全页面统一）
+  useShareAppMessage(() => ({ title: SHARE_TITLE, path: SHARE_PATH }));
+  useShareTimeline(() => ({ title: SHARE_TITLE }));
+  ensureShareMenu();
   const goHome = () => {
     Taro.switchTab({ url: "/pages/learn/index" });
   };

@@ -8,6 +8,7 @@ import Taro, {
   useShareAppMessage,
   useShareTimeline,
 } from "@tarojs/taro";
+import { ensureShareMenu } from "../../shared/share";
 import { View, Text, Button } from "@tarojs/components";
 import { useAuth } from "../../services/auth";
 import { localOverview, TodayOverview } from "../../services/units";
@@ -32,6 +33,7 @@ export default function LearnPage() {
   // 转发与分享（截图问题：「当前页面不可转发/不可分享」= 页面缺分享钩子）
   useShareAppMessage(() => ({ title: SHARE_TITLE, path: "/pages/learn/index" }));
   useShareTimeline(() => ({ title: SHARE_TITLE }));
+  ensureShareMenu();
 
   // 从会话页返回时刷新概览（tab 页常驻，useDidShow 是 Taro 的 onShow）
   useDidShow(() => {
