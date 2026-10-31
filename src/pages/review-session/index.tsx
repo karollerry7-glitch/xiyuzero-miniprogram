@@ -108,6 +108,13 @@ export default function ReviewSessionPage() {
   // 证据暴露冻结：题面揭示前取最近暴露时间
   const frozenExpo = useRef(0);
 
+  // ============ 口语跟读（每 3 题插入一次；练习性质，不计入掌握证据） ============
+  const [speakStep, setSpeakStep] = useState(false);
+  const [recState, setRecState] = useState<"idle" | "recording" | "recorded" | "denied">("idle");
+  const [recPath, setRecPath] = useState("");
+  const recRef = useRef<Taro.RecorderManager | null>(null);
+  const playRef = useRef<Taro.InnerAudioContext | null>(null);
+
   const load = async () => {
     setPhase("loading");
     try {
@@ -131,6 +138,40 @@ export default function ReviewSessionPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 录音管理器（全局单例）与回放器：组件卸载时停止录音并释放
+  useEffect(() => {
+    const rm = Taro.getRecorderManager();
+    rm.onStop((res) => {
+      if (res.tempFilePath) {
+        setRecPath(res.tempFilePath);
+        setRecState("recorded");
+      }
+    });
+    recRef.current = rm;
+    const au = Taro.createInnerAudioContext();
+    playRef.current = au;
+    return () => {
+      try {
+        rm.stop();
+      } catch {
+        /* ignore */
+      }
+      au.destroy();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 进入跟读步骤：自动播示范句
+  useEffect(() => {
+    if (phase === "quiz" && speakStep && unit) {
+      setRecState("idle");
+      setRecPath("");
+      const t = setTimeout(() => speak(unit.example.spanish), 300);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speakStep, phase]);
 
   const unit = queue[idx];
 
@@ -246,9 +287,7 @@ export default function ReviewSessionPage() {
     if (ref) speak(ref);
   };
 
-  const submitRating = (r: Rating) => {
-    if (!unit || Date.now() - fbAt.current < 350) return;
-    rateUnit(unit.id, r);
+  const advance = () => {
     if (idx + 1 < queue.length) {
       setIdx(idx + 1);
     } else {
@@ -258,6 +297,51 @@ export default function ReviewSessionPage() {
       // 会话完成 → 云端同步（fire-and-forget）
       syncNow();
     }
+  };
+
+  const submitRating = (r: Rating) => {
+    if (!unit || Date.now() - fbAt.current < 350) return;
+    rateUnit(unit.id, r);
+    // 每 3 题插入一次口语跟读（idx 2/5/8…）：练习性质，不计入掌握证据
+    if (idx % 3 === 2) {
+      setSpeakStep(true);
+      return;
+    }
+    advance();
+  };
+
+  const continueAfterSpeak = () => {
+    setSpeakStep(false);
+    advance();
+  };
+
+  /** 开始跟读录音：先请求麦克风授权；拒绝则降级为纯跟读并引导设置 */
+  const startShadow = () => {
+    Taro.authorize({ scope: "scope.record" })
+      .then(() => {
+        setRecState("recording");
+        recRef.current?.start({ duration: 15000, format: "mp3" });
+      })
+      .catch(() => {
+        setRecState("denied");
+        Taro.showModal({
+          title: "需要麦克风权限",
+          content:
+            "口语跟读会用麦克风录制你的发音，仅在本机回放对照，不上传不存储。可到设置中开启权限。",
+          confirmText: "去设置",
+          success: (r) => {
+            if (r.confirm) Taro.openSetting();
+          },
+        });
+      });
+  };
+
+  const stopShadow = () => recRef.current?.stop();
+
+  const playMine = () => {
+    if (!recPath || !playRef.current) return;
+    playRef.current.src = recPath;
+    playRef.current.play();
   };
 
   const exit = () => {
@@ -365,6 +449,53 @@ export default function ReviewSessionPage() {
         </Text>
       </View>
 
+      {speakStep && unit ? (
+        <View className="card">
+          <Text className="mode-badge">🗣️ 口语跟读</Text>
+          <Text className="speak__hint">
+            听示范 → 跟读 → 回放对照。录音仅在本机回放，不上传不存储。
+          </Text>
+          <Text className="speak__note">口语尚未验证：本练习用于发音对照，不计入掌握判定</Text>
+          <View className="speak__sentence">
+            <Text className="speak__es">{unit.example.spanish}</Text>
+            <Text className="speak__zh">{unit.example.chinese}</Text>
+            <View className="audio-btn" onClick={() => speak(unit.example.spanish)}>
+              🔊
+            </View>
+          </View>
+          <View className="speak__actions">
+            <Button className="btn-outline" onClick={() => speak(unit.example.spanish)}>
+              🎧 再听示范
+            </Button>
+            {recState === "recording" ? (
+              <Button className="btn-main btn-main--dark" onClick={stopShadow}>
+                ⏹️ 结束录音
+              </Button>
+            ) : (
+              <Button className="btn-outline" onClick={startShadow}>
+                🎙️ 录音跟读
+              </Button>
+            )}
+            {recState === "recorded" && (
+              <Button className="btn-outline" onClick={playMine}>
+                ▶️ 回放我的录音
+              </Button>
+            )}
+          </View>
+          {recState === "denied" && (
+            <Text className="speak__denied">
+              未开启麦克风权限：可点示范音频直接跟读，不影响学习
+            </Text>
+          )}
+          <View className="nav">
+            <View className="nav__next">
+              <Button className="btn-main" onClick={continueAfterSpeak}>
+                继续复习 →
+              </Button>
+            </View>
+          </View>
+        </View>
+      ) : (
       <View className="card">
         <Text className="mode-badge">{MODE_LABEL[mode]}</Text>
 
@@ -516,6 +647,7 @@ export default function ReviewSessionPage() {
           </View>
         )}
       </View>
+      )}
     </View>
   );
 }

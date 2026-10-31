@@ -200,3 +200,58 @@
   margin-top: 8rpx;
   text-align: center;
 }
+
+// ============ 口语跟读步骤（练习性质，不计入掌握判定） ============
+.speak__hint {
+  display: block;
+  font-size: 24rpx;
+  color: #888;
+  line-height: 1.7;
+  margin-bottom: 8rpx;
+}
+
+.speak__note {
+  display: block;
+  font-size: 24rpx;
+  color: #9a6b00;
+  background: #fff4e0;
+  border-radius: 10rpx;
+  padding: 12rpx 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.speak__sentence {
+  padding: 20rpx 24rpx;
+  background: #f7f7fa;
+  border-radius: 14rpx;
+  margin-bottom: 20rpx;
+}
+
+.speak__es {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 8rpx;
+}
+
+.speak__zh {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.speak__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-bottom: 8rpx;
+}
+
+.speak__denied {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.7;
+}
